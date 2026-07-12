@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Получаем всю историю коммитов для работы с тегами
-          repository: 'mirrorru/qqm'  # Внешний приватный репозиторий
+          repository: '${{github.repository}}'  # Внешний приватный репозиторий
           token: ${{ secrets.ACTIONS }}
 
 
