@@ -5,7 +5,6 @@ package smoke
 import (
 	"context"
 	"database/sql"
-	"log/slog"
 	quick_crud "quick-crud"
 	"quick-crud/tx_adapter"
 	"sync"
@@ -23,19 +22,13 @@ var sqliteConn func() *sql.DB = func() func() *sql.DB {
 	)
 	return func() *sql.DB {
 		once.Do(func() {
-			db = dot.MustMake(sql.Open("sqlite", ":memory:"))
+			db = dot.MustMake(sql.Open("sqlite", "file::memory:?cache=shared"))
 			dot.MustMake(db.Exec(setupDBSQL))
 			dot.MustMake(db.Exec(insertDataSQL))
 		})
 		return db
 	}
 }()
-
-func TestMain(m *testing.M) {
-	slog.Info("DB created")
-	m.Run()
-	slog.Info("TESTING DONE")
-}
 
 const setupDBSQL = `
 	create table id_name_age_filled (
