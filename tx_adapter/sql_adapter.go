@@ -28,13 +28,13 @@ func (a DBAdapter) ExecContext(ctx context.Context, query string, args ...any) (
 // QueryContext выполняет запрос, возвращающий строки.
 // EN: QueryContext executes a query that returns rows.
 func (a DBAdapter) QueryContext(ctx context.Context, query string, args ...any) (qc.Rows, error) {
-	return a.db.QueryContext(ctx, query, args...)
+	return a.db.QueryContext(ctx, query, args...) //nolint:rowserrcheck
 }
 
 // QueryRowContext выполняет запрос, возвращающий одну строку.
 // EN: QueryRowContext executes a query that returns a single row.
 func (a DBAdapter) QueryRowContext(ctx context.Context, query string, args ...any) qc.Row {
-	return a.db.QueryRowContext(ctx, query, args...)
+	return a.db.QueryRowContext(ctx, query, args...) //nolint:rowserrcheck
 }
 
 // TxAdapter адаптирует *sql.Tx к интерфейсу TxProcessor.
@@ -58,7 +58,7 @@ func (a TxAdapter) ExecContext(ctx context.Context, query string, args ...any) (
 // QueryContext выполняет запрос, возвращающий строки.
 // EN: QueryContext executes a query that returns rows.
 func (a TxAdapter) QueryContext(ctx context.Context, query string, args ...any) (qc.Rows, error) {
-	return a.tx.QueryContext(ctx, query, args...)
+	return a.tx.QueryContext(ctx, query, args...) //nolint:rowserrcheck
 }
 
 // QueryRowContext выполняет запрос, возвращающий одну строку.

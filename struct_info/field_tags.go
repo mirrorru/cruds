@@ -31,6 +31,8 @@ const keySeparator = ";"
 const inKeySeparator = ","
 const inKVSeparator = ":"
 
+var _ = inKeySeparator
+
 type FieldTagFlags struct {
 	IsPK        bool // keyPK
 	ReadOnly    bool // keyRO

@@ -65,7 +65,7 @@ func GetTableInfo(t reflect.Type) (TableInfo, error) {
 }
 
 func getTableName(t reflect.Type) string {
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Ptr { //nolint:govet
 		t = t.Elem()
 	}
 	zero := reflect.New(t).Interface()

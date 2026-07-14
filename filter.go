@@ -161,7 +161,9 @@ func (gn GroupNode) Build(tf struct_info.TableFields, d dialect.SQLDialect, argI
 	return "", nil, fmt.Errorf("qqm: unknown LogicOp %d", gn.Logic)
 }
 
-func buildChildren(children []FilterNode, tf struct_info.TableFields, d dialect.SQLDialect, argIdx *int, separator string) (string, []any, error) {
+func buildChildren(
+	children []FilterNode, tf struct_info.TableFields, d dialect.SQLDialect, argIdx *int, separator string,
+) (string, []any, error) {
 	if len(children) == 0 {
 		return "", nil, nil
 	}

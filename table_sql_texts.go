@@ -27,7 +27,7 @@ func (b sqlBuilder) SQLTexts(d quick_crud.SQLDialect, ti *struct_info.TableInfo)
 		Update:    b.buildUpdateSQL(d, ti),
 		Delete:    b.buildDeleteSQL(d, ti),
 		GetOne:    b.buildGetOneSQL(d, ti),
-		ListStart: b.buildListSQL(d, ti),
+		ListStart: b.buildListSQL(ti),
 		SortPart:  buildOrderByClause(ti),
 	}
 }
@@ -48,7 +48,7 @@ func (b sqlBuilder) buildGetOneSQL(d quick_crud.SQLDialect, ti *struct_info.Tabl
 	return sb.String()
 }
 
-func (sqlBuilder) buildListSQL(d quick_crud.SQLDialect, ti *struct_info.TableInfo) string {
+func (sqlBuilder) buildListSQL(ti *struct_info.TableInfo) string {
 	if len(ti.SelectIdxList) == 0 {
 		return ""
 	}
