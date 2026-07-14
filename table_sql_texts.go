@@ -85,6 +85,7 @@ func (sqlBuilder) buildInsertSQL(d quick_crud.SQLDialect, ti *struct_info.TableI
 	sb.WriteString(defs.SQLCloseParen)
 
 	if d.SupportsReturning() {
+		sb.WriteString(defs.SQLReturning)
 		sb.WriteString(buildColumnList(ti, ti.SelectIdxList))
 	}
 
@@ -115,6 +116,7 @@ func (b sqlBuilder) buildUpdateSQL(d quick_crud.SQLDialect, ti *struct_info.Tabl
 	}
 	b.writeWhereClauses(len(ti.UpdateIdxList), &sb, d, ti)
 	if d.SupportsReturning() {
+		sb.WriteString(defs.SQLReturning)
 		sb.WriteString(buildColumnList(ti, ti.SelectIdxList))
 	}
 

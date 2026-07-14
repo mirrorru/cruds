@@ -77,3 +77,14 @@ func (tfs TableFields) ExtractRefs(src any, indexes []int) (refs []any) {
 
 	return result
 }
+
+func (tfs TableFields) ExtractArgs(src any, indexes []int) []any {
+	rv := reflect.ValueOf(src).Elem()
+	result := make([]any, len(indexes))
+	for pos, idx := range indexes {
+		fld := rv.FieldByIndex(tfs[idx].Index)
+		result[pos] = fld.Interface()
+	}
+
+	return result
+}

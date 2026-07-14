@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	quick_crud "quick-crud"
 	"quick-crud/tx_adapter"
-	"sync"
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
@@ -15,31 +14,31 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var sqliteConn = func() func() *sql.DB {
-	var (
-		once sync.Once
-		db   *sql.DB
-	)
-	return func() *sql.DB {
-		once.Do(func() {
-			db = dot.MustMake(sql.Open("sqlite", ":memory:"))
-			dot.MustMake(db.Exec(setupDBSQL))
-			dot.MustMake(db.Exec(insertDataSQL))
-		})
-		return db
-	}
-}()
+var sqliteConn *sql.DB
+
+func TestMain(m *testing.M) {
+	sqliteConn = dot.MustMake(sql.Open("sqlite", "file::memory:?cache=shared"))
+	dot.MustMake(sqliteConn.Exec(setupDBSQL))
+	dot.MustMake(sqliteConn.Exec(insertDataSQL))
+	m.Run()
+}
 
 const setupDBSQL = `
+	create table id_name_age_filled (
+	    id integer primary key autoincrement not null,
+	    name text not null,
+	    age int null
+	);
+
 	create table id_name_age_row (
 	    id integer primary key autoincrement not null,
 	    name text not null,
 	    age int null
 	);
-	
+
 `
 const insertDataSQL = `
-	insert into id_name_age_row (name, age) values 
+	insert into id_name_age_filled (name, age) values 
 		('Unaged', null),
 		('Alice', 11),
 		('Bob', 22);
@@ -55,7 +54,7 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	return &testEnv{
 		ctx: context.Background(),
-		db:  sqliteConn(),
+		db:  sqliteConn,
 	}
 }
 

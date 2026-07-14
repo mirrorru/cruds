@@ -45,14 +45,34 @@ func (t *Table[ROW]) Internals() tableInternals {
 }
 
 func (t *Table[ROW]) Ins(ctx context.Context, tx TxProcessor, row *ROW) (*ROW, Result, error) {
-	return nil, nil, nil
+	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.InsertIdxList)
+	if !t.dialect.SupportsReturning() {
+		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
+		return row, sqlResult, err
+	}
+	buf := new(ROW)
+	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	err := tx.QueryRowContext(ctx, t.sqlTexts.Insert, args...).Scan(refs...)
+
+	return buf, nil, err
 }
 
-// Upd обновляет строку по PK. Если диалект поддерживает RETURNING — возвращает обновлённую строку.
-// EN: Upd updates a row by PK. If the dialect supports RETURNING — returns the updated row.
 func (t *Table[ROW]) Upd(ctx context.Context, tx TxProcessor, row *ROW) (*ROW, Result, error) {
-	return nil, nil, nil
+	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.UpdateIdxList)
+	args = append(args,
+		t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.PKIdxList)...,
+	)
+	if !t.dialect.SupportsReturning() {
+		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
+		return row, sqlResult, err
+	}
+	buf := new(ROW)
+	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	err := tx.QueryRowContext(ctx, t.sqlTexts.Update, args...).Scan(refs...)
+
+	return buf, nil, err
 }
+
 func (t *Table[ROW]) One(ctx context.Context, tx TxProcessor, keys ...any) (*ROW, error) {
 	buf := new(ROW)
 	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
@@ -62,7 +82,7 @@ func (t *Table[ROW]) One(ctx context.Context, tx TxProcessor, keys ...any) (*ROW
 }
 
 func (t *Table[ROW]) Del(ctx context.Context, tx TxProcessor, keys ...any) (Result, error) {
-	return nil, nil
+	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
 func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *Filter) (result []*ROW, err error) {
@@ -83,6 +103,9 @@ func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *Filter) (
 			query.WriteString(defs.SQLWhere)
 			query.WriteString(where)
 		}
+	}
+	query.WriteString(t.sqlTexts.SortPart)
+	if filter != nil {
 		query.WriteString(t.dialect.OffsetAndLimit(filter.Offset, filter.Limit))
 	}
 	buf := new(ROW)
