@@ -1,4 +1,4 @@
-package quick_crud
+package contracts
 
 import "context"
 

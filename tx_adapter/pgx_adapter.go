@@ -2,11 +2,10 @@ package tx_adapter
 
 import (
 	"context"
+	qc "quick-crud/contracts"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-
-	qc "quick-crud"
 )
 
 // PGXAdapter адаптирует *pgx.Conn к интерфейсу TxProcessor.

@@ -1,6 +1,7 @@
-package quick_crud_test
+package filter_test
 
 import (
+	"quick-crud/filter"
 	"testing"
 
 	qc "quick-crud"
@@ -20,7 +21,7 @@ func TestBuildWhere_NilRoot(t *testing.T) {
 	t.Parallel()
 
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
-	f := qc.Filter{Range: nil}
+	f := filter.Filter{Range: nil}
 	query, args, err := f.BuildWhere(table.Internals().TableInfo.Fields, dialect.SQLiteDialect{})
 	require.NoError(t, err)
 	assert.Empty(t, query)
@@ -33,8 +34,8 @@ func TestBuildWhere_SingleCondition_SQLite(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(1, qc.CmdEq, "Alice")
-	f := qc.Filter{Range: root}
+	root := filter.Cond(1, filter.CmdEq, "Alice")
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -50,8 +51,8 @@ func TestBuildWhere_SingleCondition_PG(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(1, qc.CmdEq, "Alice")
-	f := qc.Filter{Range: root}
+	root := filter.Cond(1, filter.CmdEq, "Alice")
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.PostgreSQLDialect{})
 	require.NoError(t, err)
@@ -67,11 +68,11 @@ func TestBuildWhere_MultipleAND(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.And(
-		qc.Cond(1, qc.CmdEq, "Alice"),
-		qc.Cond(2, qc.CmdGte, 25),
+	root := filter.And(
+		filter.Cond(1, filter.CmdEq, "Alice"),
+		filter.Cond(2, filter.CmdGte, 25),
 	)
-	f := qc.Filter{Range: root}
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -88,11 +89,11 @@ func TestBuildWhere_OR(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Or(
-		qc.Cond(1, qc.CmdEq, "Alice"),
-		qc.Cond(1, qc.CmdEq, "Bob"),
+	root := filter.Or(
+		filter.Cond(1, filter.CmdEq, "Alice"),
+		filter.Cond(1, filter.CmdEq, "Bob"),
 	)
-	f := qc.Filter{Range: root}
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -107,8 +108,8 @@ func TestBuildWhere_NOT(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Not(qc.Cond(2, qc.CmdEq, 18))
-	f := qc.Filter{Range: root}
+	root := filter.Not(filter.Cond(2, filter.CmdEq, 18))
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -124,14 +125,14 @@ func TestBuildWhere_Nested(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.And(
-		qc.Cond(1, qc.CmdEq, "Alice"),
-		qc.Or(
-			qc.Cond(2, qc.CmdGt, 20),
-			qc.Cond(2, qc.CmdLt, 10),
+	root := filter.And(
+		filter.Cond(1, filter.CmdEq, "Alice"),
+		filter.Or(
+			filter.Cond(2, filter.CmdGt, 20),
+			filter.Cond(2, filter.CmdLt, 10),
 		),
 	)
-	f := qc.Filter{Range: root}
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -148,17 +149,17 @@ func TestBuildWhere_Operators(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		op       qc.CommandOp
+		op       filter.CommandOp
 		value    any
 		wantSQL  string
 		wantArgs []any
 	}{
-		{"Eq", qc.CmdEq, 42, "= ?", []any{42}},
-		{"NotEq", qc.CmdNotEq, 42, "<> ?", []any{42}},
-		{"Gt", qc.CmdGt, 42, "> ?", []any{42}},
-		{"Gte", qc.CmdGte, 42, ">= ?", []any{42}},
-		{"Lt", qc.CmdLt, 42, "< ?", []any{42}},
-		{"Lte", qc.CmdLte, 42, "<= ?", []any{42}},
+		{"Eq", filter.CmdEq, 42, "= ?", []any{42}},
+		{"NotEq", filter.CmdNotEq, 42, "<> ?", []any{42}},
+		{"Gt", filter.CmdGt, 42, "> ?", []any{42}},
+		{"Gte", filter.CmdGte, 42, ">= ?", []any{42}},
+		{"Lt", filter.CmdLt, 42, "< ?", []any{42}},
+		{"Lte", filter.CmdLte, 42, "<= ?", []any{42}},
 	}
 
 	for _, tt := range tests {
@@ -168,8 +169,8 @@ func TestBuildWhere_Operators(t *testing.T) {
 			table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 			tf := table.Internals().TableInfo.Fields
 
-			root := qc.Cond(2, tt.op, tt.value)
-			f := qc.Filter{Range: root}
+			root := filter.Cond(2, tt.op, tt.value)
+			f := filter.Filter{Range: root}
 
 			query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 			require.NoError(t, err)
@@ -188,8 +189,8 @@ func TestBuildWhere_IsNull_IsNotNull(t *testing.T) {
 		table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 		tf := table.Internals().TableInfo.Fields
 
-		root := qc.Cond(1, qc.CmdIsNull, nil)
-		f := qc.Filter{Range: root}
+		root := filter.Cond(1, filter.CmdIsNull, nil)
+		f := filter.Filter{Range: root}
 
 		query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 		require.NoError(t, err)
@@ -203,8 +204,8 @@ func TestBuildWhere_IsNull_IsNotNull(t *testing.T) {
 		table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 		tf := table.Internals().TableInfo.Fields
 
-		root := qc.Cond(1, qc.CmdIsNotNull, nil)
-		f := qc.Filter{Range: root}
+		root := filter.Cond(1, filter.CmdIsNotNull, nil)
+		f := filter.Filter{Range: root}
 
 		query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 		require.NoError(t, err)
@@ -219,8 +220,8 @@ func TestBuildWhere_Like(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(1, qc.CmdLike, "%Alice%")
-	f := qc.Filter{Range: root}
+	root := filter.Cond(1, filter.CmdLike, "%Alice%")
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -234,8 +235,8 @@ func TestBuildWhere_ILike_PG(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(1, qc.CmdILike, "%Alice%")
-	f := qc.Filter{Range: root}
+	root := filter.Cond(1, filter.CmdILike, "%Alice%")
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.PostgreSQLDialect{})
 	require.NoError(t, err)
@@ -249,8 +250,8 @@ func TestBuildWhere_ILike_SQLite(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(1, qc.CmdILike, "%Alice%")
-	f := qc.Filter{Range: root}
+	root := filter.Cond(1, filter.CmdILike, "%Alice%")
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -265,8 +266,8 @@ func TestBuildWhere_In(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(2, qc.CmdIn, []any{20, 30, 40})
-	f := qc.Filter{Range: root}
+	root := filter.Cond(2, filter.CmdIn, []any{20, 30, 40})
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -281,12 +282,12 @@ func TestBuildWhere_PlaceholderContinuity(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.And(
-		qc.Cond(1, qc.CmdEq, "Alice"),
-		qc.Cond(2, qc.CmdGte, 25),
-		qc.Cond(2, qc.CmdLte, 50),
+	root := filter.And(
+		filter.Cond(1, filter.CmdEq, "Alice"),
+		filter.Cond(2, filter.CmdGte, 25),
+		filter.Cond(2, filter.CmdLte, 50),
 	)
-	f := qc.Filter{Range: root}
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.PostgreSQLDialect{})
 	require.NoError(t, err)
@@ -304,8 +305,8 @@ func TestBuildWhere_OutOfRange(t *testing.T) {
 	table := qc.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := qc.Cond(99, qc.CmdEq, "test")
-	f := qc.Filter{Range: root}
+	root := filter.Cond(99, filter.CmdEq, "test")
+	f := filter.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.Error(t, err)
@@ -316,15 +317,15 @@ func TestBuildWhere_OutOfRange(t *testing.T) {
 func TestCond_HasRequiredMethods(t *testing.T) {
 	t.Parallel()
 
-	node := qc.Cond(0, qc.CmdEq, "test")
+	node := filter.Cond(0, filter.CmdEq, "test")
 	assert.NotNil(t, node)
 
-	andNode := qc.And(node)
+	andNode := filter.And(node)
 	assert.NotNil(t, andNode)
 
-	orNode := qc.Or(node, node)
+	orNode := filter.Or(node, node)
 	assert.NotNil(t, orNode)
 
-	notNode := qc.Not(node)
+	notNode := filter.Not(node)
 	require.NotNil(t, notNode)
 }

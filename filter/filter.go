@@ -1,4 +1,4 @@
-package quick_crud
+package filter
 
 import (
 	"fmt"

@@ -1,13 +1,12 @@
-package quick_crud
+package struct_info
 
 import (
 	"quick-crud/defs"
 	quick_crud "quick-crud/dialect"
-	"quick-crud/struct_info"
 	"strings"
 )
 
-type sqlTexts struct {
+type SqlTexts struct {
 	Insert    string
 	Update    string
 	Delete    string
@@ -16,13 +15,13 @@ type sqlTexts struct {
 	SortPart  string
 }
 
-var sqlBuilderVal sqlBuilder
+var SqlBuilderVal sqlBuilder
 
 type sqlBuilder struct {
 }
 
-func (b sqlBuilder) SQLTexts(d quick_crud.SQLDialect, ti *struct_info.TableInfo) sqlTexts {
-	return sqlTexts{
+func (b sqlBuilder) SQLTexts(d quick_crud.SQLDialect, ti *TableInfo) SqlTexts {
+	return SqlTexts{
 		Insert:    b.buildInsertSQL(d, ti),
 		Update:    b.buildUpdateSQL(d, ti),
 		Delete:    b.buildDeleteSQL(d, ti),
@@ -32,7 +31,7 @@ func (b sqlBuilder) SQLTexts(d quick_crud.SQLDialect, ti *struct_info.TableInfo)
 	}
 }
 
-func (b sqlBuilder) buildGetOneSQL(d quick_crud.SQLDialect, ti *struct_info.TableInfo) string {
+func (b sqlBuilder) buildGetOneSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
 	if len(ti.SelectIdxList) == 0 || len(ti.PKIdxList) == 0 {
 		return ""
 	}
@@ -48,7 +47,7 @@ func (b sqlBuilder) buildGetOneSQL(d quick_crud.SQLDialect, ti *struct_info.Tabl
 	return sb.String()
 }
 
-func (sqlBuilder) buildListSQL(ti *struct_info.TableInfo) string {
+func (sqlBuilder) buildListSQL(ti *TableInfo) string {
 	if len(ti.SelectIdxList) == 0 {
 		return ""
 	}
@@ -62,7 +61,7 @@ func (sqlBuilder) buildListSQL(ti *struct_info.TableInfo) string {
 	return sb.String()
 }
 
-func (sqlBuilder) buildInsertSQL(d quick_crud.SQLDialect, ti *struct_info.TableInfo) string {
+func (sqlBuilder) buildInsertSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
 	if len(ti.InsertIdxList) == 0 {
 		return ""
 	}
@@ -92,7 +91,7 @@ func (sqlBuilder) buildInsertSQL(d quick_crud.SQLDialect, ti *struct_info.TableI
 	return sb.String()
 }
 
-func (b sqlBuilder) buildUpdateSQL(d quick_crud.SQLDialect, ti *struct_info.TableInfo) string {
+func (b sqlBuilder) buildUpdateSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
 	if len(ti.UpdateIdxList) == 0 || len(ti.PKIdxList) == 0 {
 		return ""
 	}
@@ -123,7 +122,7 @@ func (b sqlBuilder) buildUpdateSQL(d quick_crud.SQLDialect, ti *struct_info.Tabl
 	return sb.String()
 }
 
-func (b sqlBuilder) buildDeleteSQL(d quick_crud.SQLDialect, ti *struct_info.TableInfo) string {
+func (b sqlBuilder) buildDeleteSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
 	if len(ti.PKIdxList) == 0 {
 		return ""
 	}
@@ -136,7 +135,7 @@ func (b sqlBuilder) buildDeleteSQL(d quick_crud.SQLDialect, ti *struct_info.Tabl
 	return sb.String()
 }
 
-func (sqlBuilder) writeWhereClauses(offset int, sb *strings.Builder, d quick_crud.SQLDialect, ti *struct_info.TableInfo) {
+func (sqlBuilder) writeWhereClauses(offset int, sb *strings.Builder, d quick_crud.SQLDialect, ti *TableInfo) {
 	sb.WriteString(defs.SQLWhere)
 	for pos, idx := range ti.PKIdxList {
 		if pos > 0 {
@@ -148,7 +147,7 @@ func (sqlBuilder) writeWhereClauses(offset int, sb *strings.Builder, d quick_cru
 	}
 }
 
-func buildColumnList(ti *struct_info.TableInfo, indexes []int) string {
+func buildColumnList(ti *TableInfo, indexes []int) string {
 	if len(indexes) == 0 {
 		return ""
 	}
@@ -163,7 +162,7 @@ func buildColumnList(ti *struct_info.TableInfo, indexes []int) string {
 	return sb.String()
 }
 
-func buildOrderByClause(ti *struct_info.TableInfo) string {
+func buildOrderByClause(ti *TableInfo) string {
 	if len(ti.SortIdxList) == 0 {
 		return ""
 	}
