@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Получаем всю историю коммитов для работы с тегами
-          repository: '${{github.repository}}'  # Внешний приватный репозиторий
+          repository: ${{github.repository}}  # Внешний приватный репозиторий
           token: ${{ secrets.ACTIONS }}
 
 
@@ -28,7 +28,9 @@ jobs:
         id: get-tag
         run: |
           # Получаем последний тег или используем v0.0.0 по умолчанию
-          LAST_TAG=$(git describe --tags --abbrev=0 --match="v*.*.*" || echo "v0.1.0") 
+          
+          LAST_TAG=$(git describe --tags --abbrev=0 --match="v*.*.*" || echo "v0.1.0")
+          
           echo "last_tag=${LAST_TAG}" >> $GITHUB_OUTPUT
           
           # Разбираем версию на компоненты
