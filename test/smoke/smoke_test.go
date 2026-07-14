@@ -5,6 +5,7 @@ package smoke
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	quick_crud "quick-crud"
 	"quick-crud/tx_adapter"
 	"testing"
@@ -18,9 +19,12 @@ var sqliteConn *sql.DB
 
 func TestMain(m *testing.M) {
 	sqliteConn = dot.MustMake(sql.Open("sqlite", "file::memory:?cache=shared"))
+	sqliteConn.SetMaxOpenConns(1)
 	dot.MustMake(sqliteConn.Exec(setupDBSQL))
 	dot.MustMake(sqliteConn.Exec(insertDataSQL))
+	slog.Info("DB created")
 	m.Run()
+	slog.Info("TESTING DONE")
 }
 
 const setupDBSQL = `
