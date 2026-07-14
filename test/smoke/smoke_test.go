@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	quick_crud "quick-crud"
 	"quick-crud/tx_adapter"
+	"sync"
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
@@ -15,13 +16,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var sqliteConn *sql.DB
+var sqliteConn func() *sql.DB = func() func() *sql.DB {
+	var (
+		once sync.Once
+		db   *sql.DB
+	)
+	return func() *sql.DB {
+		once.Do(func() {
+			db = dot.MustMake(sql.Open("sqlite", ":memory:"))
+			dot.MustMake(db.Exec(setupDBSQL))
+			dot.MustMake(db.Exec(insertDataSQL))
+		})
+		return db
+	}
+}()
 
 func TestMain(m *testing.M) {
-	sqliteConn = dot.MustMake(sql.Open("sqlite", "file::memory:?cache=shared"))
-	sqliteConn.SetMaxOpenConns(1)
-	dot.MustMake(sqliteConn.Exec(setupDBSQL))
-	dot.MustMake(sqliteConn.Exec(insertDataSQL))
 	slog.Info("DB created")
 	m.Run()
 	slog.Info("TESTING DONE")
@@ -58,7 +68,7 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	return &testEnv{
 		ctx: context.Background(),
-		db:  sqliteConn,
+		db:  sqliteConn(),
 	}
 }
 
