@@ -14,6 +14,7 @@ Domain Driven Design & Clean Architecture.
 ### Application Layer (Слой приложения)
 
 - **Корневой пакет (quick-crud)** — универсальная реализация `Table[ROW]` с использованием reflection
+- **dialect_vars.go** — пакетные переменные-алиасы (`SQLite`, `PostgresSQL`) для удобного доступа к диалектам без импорта пакета `dialect`
 - **cmd/qcgen** — генератор кода для создания типизированных реализаций без reflection
 
 ### Infrastructure Layer (Инфраструктурный слой)

@@ -14,6 +14,7 @@ Quick CRUD предоставляет типобезопасный слой дл
 
 - **CRUD-операции**: `Ins` (insert), `Upd` (update), `One` (select by PK), `Del` (delete), `Many` (select with filter)
 - **Поддержка БД**: PostgreSQL (с RETURNING), SQLite (с RETURNING)
+- **Удобные алиасы диалектов**: пакетные переменные `SQLite` и `PostgresSQL` в корневом пакете для доступа к диалектам без импорта пакета `dialect`
 - **Система тегов**: настройка поведения полей через struct tag `tbl`
 - **Фильтры**: дерево условий с операторами (AND, OR, NOT, =, <>, >, >=, <, <=, LIKE, ILIKE, IN, IS NULL, IS NOT NULL)
 - **Пагинация**: OFFSET/LIMIT
