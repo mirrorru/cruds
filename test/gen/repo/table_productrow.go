@@ -6,7 +6,6 @@ package repo
 import (
 	"context"
 	"errors"
-	"reflect"
 	"strings"
 
 	"quick-crud/contracts"
@@ -14,8 +13,6 @@ import (
 	"quick-crud/dialect"
 	"quick-crud/filter"
 	"quick-crud/struct_info"
-
-	"github.com/mirrorru/dot"
 
 	"quick-crud/test/gen/model"
 )
@@ -34,7 +31,22 @@ type tableProductRowInternals struct {
 }
 
 func NewTableProductRowVal(d dialect.SQLDialect) TableProductRow {
-	tableInfo := dot.MustMake(struct_info.GetTableInfo(reflect.TypeFor[model.ProductRow]()))
+	tableInfo := struct_info.TableInfo{
+		SQLName: "products",
+		Fields: struct_info.TableFields{
+			{Path: []string{"ID" }, SQLName: "id", IsPK: true, CanSelect: true},
+			{Path: []string{"Name" }, SQLName: "name", CanSelect: true, CanInsert: true, CanUpdate: true, SortPos: 1},
+			{Path: []string{"Price" }, SQLName: "price", CanSelect: true, CanInsert: true, CanUpdate: true},
+			{Path: []string{"Stock" }, SQLName: "stock", CanSelect: true, CanInsert: true, CanUpdate: true},
+		},
+		FieldNameIdx:  map[string]int{"id": 0, "name": 1, "price": 2, "stock": 3 },
+		PKIdxList:     []int{0 },
+		InsertIdxList: []int{1, 2, 3 },
+		UpdateIdxList: []int{1, 2, 3 },
+		SelectIdxList: []int{0, 1, 2, 3 },
+		SortIdxList:   []int{1 },
+		RefIdxList:    []int{ },
+	}
 
 	return TableProductRow{
 		dialect:   d,
@@ -54,30 +66,39 @@ func (t *TableProductRow) Internals() tableProductRowInternals {
 	}
 }
 
+func (t *TableProductRow) scanRefs(buf *model.ProductRow) []any {
+	return []any{&buf.ID, &buf.Name, &buf.Price, &buf.Stock }
+}
+
+func (t *TableProductRow) insertArgs(row *model.ProductRow) []any {
+	return []any{row.Name, row.Price, row.Stock }
+}
+
+func (t *TableProductRow) updateArgs(row *model.ProductRow) []any {
+	return []any{row.Name, row.Price, row.Stock, row.ID }
+}
+
 func (t *TableProductRow) Ins(ctx context.Context, tx contracts.TxProcessor, row *model.ProductRow) (*model.ProductRow, contracts.Result, error) {
-	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.InsertIdxList)
+	args := t.insertArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
 		return row, sqlResult, err
 	}
 	buf := new(model.ProductRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.Insert, args...).Scan(refs...)
 
 	return buf, nil, err
 }
 
 func (t *TableProductRow) Upd(ctx context.Context, tx contracts.TxProcessor, row *model.ProductRow) (*model.ProductRow, contracts.Result, error) {
-	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.UpdateIdxList)
-	args = append(args,
-		t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.PKIdxList)...,
-	)
+	args := t.updateArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
 		return row, sqlResult, err
 	}
 	buf := new(model.ProductRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.Update, args...).Scan(refs...)
 
 	return buf, nil, err
@@ -85,7 +106,7 @@ func (t *TableProductRow) Upd(ctx context.Context, tx contracts.TxProcessor, row
 
 func (t *TableProductRow) One(ctx context.Context, tx contracts.TxProcessor, keys ...any) (*model.ProductRow, error) {
 	buf := new(model.ProductRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
 
 	return buf, err
@@ -119,7 +140,7 @@ func (t *TableProductRow) Many(ctx context.Context, tx contracts.TxProcessor, fi
 		query.WriteString(t.dialect.OffsetAndLimit(filter.Offset, filter.Limit))
 	}
 	buf := new(model.ProductRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 
 	rows, err := tx.QueryContext(ctx, query.String(), args...)
 	if err != nil {

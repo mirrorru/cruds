@@ -6,7 +6,6 @@ package repo
 import (
 	"context"
 	"errors"
-	"reflect"
 	"strings"
 
 	"quick-crud/contracts"
@@ -14,8 +13,6 @@ import (
 	"quick-crud/dialect"
 	"quick-crud/filter"
 	"quick-crud/struct_info"
-
-	"github.com/mirrorru/dot"
 
 	"quick-crud/test/gen/model"
 )
@@ -34,7 +31,21 @@ type tableUserRowInternals struct {
 }
 
 func NewTableUserRowVal(d dialect.SQLDialect) TableUserRow {
-	tableInfo := dot.MustMake(struct_info.GetTableInfo(reflect.TypeFor[model.UserRow]()))
+	tableInfo := struct_info.TableInfo{
+		SQLName: "user_row",
+		Fields: struct_info.TableFields{
+			{Path: []string{"ID" }, SQLName: "id", IsPK: true, CanSelect: true},
+			{Path: []string{"Name" }, SQLName: "name", CanSelect: true, CanInsert: true, CanUpdate: true, SortPos: 1},
+			{Path: []string{"Age" }, SQLName: "age", CanSelect: true, CanInsert: true, CanUpdate: true},
+		},
+		FieldNameIdx:  map[string]int{"id": 0, "name": 1, "age": 2 },
+		PKIdxList:     []int{0 },
+		InsertIdxList: []int{1, 2 },
+		UpdateIdxList: []int{1, 2 },
+		SelectIdxList: []int{0, 1, 2 },
+		SortIdxList:   []int{1 },
+		RefIdxList:    []int{ },
+	}
 
 	return TableUserRow{
 		dialect:   d,
@@ -54,30 +65,39 @@ func (t *TableUserRow) Internals() tableUserRowInternals {
 	}
 }
 
+func (t *TableUserRow) scanRefs(buf *model.UserRow) []any {
+	return []any{&buf.ID, &buf.Name, &buf.Age }
+}
+
+func (t *TableUserRow) insertArgs(row *model.UserRow) []any {
+	return []any{row.Name, row.Age }
+}
+
+func (t *TableUserRow) updateArgs(row *model.UserRow) []any {
+	return []any{row.Name, row.Age, row.ID }
+}
+
 func (t *TableUserRow) Ins(ctx context.Context, tx contracts.TxProcessor, row *model.UserRow) (*model.UserRow, contracts.Result, error) {
-	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.InsertIdxList)
+	args := t.insertArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
 		return row, sqlResult, err
 	}
 	buf := new(model.UserRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.Insert, args...).Scan(refs...)
 
 	return buf, nil, err
 }
 
 func (t *TableUserRow) Upd(ctx context.Context, tx contracts.TxProcessor, row *model.UserRow) (*model.UserRow, contracts.Result, error) {
-	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.UpdateIdxList)
-	args = append(args,
-		t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.PKIdxList)...,
-	)
+	args := t.updateArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
 		return row, sqlResult, err
 	}
 	buf := new(model.UserRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.Update, args...).Scan(refs...)
 
 	return buf, nil, err
@@ -85,7 +105,7 @@ func (t *TableUserRow) Upd(ctx context.Context, tx contracts.TxProcessor, row *m
 
 func (t *TableUserRow) One(ctx context.Context, tx contracts.TxProcessor, keys ...any) (*model.UserRow, error) {
 	buf := new(model.UserRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
 
 	return buf, err
@@ -119,7 +139,7 @@ func (t *TableUserRow) Many(ctx context.Context, tx contracts.TxProcessor, filte
 		query.WriteString(t.dialect.OffsetAndLimit(filter.Offset, filter.Limit))
 	}
 	buf := new(model.UserRow)
-	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
+	refs := t.scanRefs(buf)
 
 	rows, err := tx.QueryContext(ctx, query.String(), args...)
 	if err != nil {

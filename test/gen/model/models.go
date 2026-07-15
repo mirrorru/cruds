@@ -7,8 +7,8 @@ type UserRow struct {
 }
 
 type ProductRow struct {
-	ID    int     `tbl:"pk;auto"`
-	Name  string  `tbl:"sort=1"`
+	ID    int    `tbl:"pk;auto"` //nolint:lll
+	Name  string `tbl:"sort=1"`
 	Price float64
 	Stock int
 }
