@@ -42,6 +42,12 @@ tasks:
       - grep -v -e '_mock.go' -e '_mock_test.go' {{.COVER_DIR}}/smoke_raw.out > {{.COVER_DIR}}/smoke.out
       - go tool cover -func={{.COVER_DIR}}/smoke.out | grep -v -e '_mock'
 
+  gen:test:
+    desc: "Тесты сгенерированного кода (build tag: smoke)"
+    cmds:
+      - go vet ./...
+      - go test -count=1 -tags=smoke ./test/gen/repo/...
+
   concurrent:
     desc: "Тесты многопоточности (build tag: concurrent)"
     cmds:
