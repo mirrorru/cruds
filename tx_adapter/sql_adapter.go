@@ -3,7 +3,7 @@ package tx_adapter
 import (
 	"context"
 	"database/sql"
-	qc "quick-crud/contracts"
+	qc "quick-crud"
 )
 
 // DBAdapter адаптирует *sql.DB к интерфейсу TxProcessor.
@@ -11,6 +11,8 @@ import (
 type DBAdapter struct {
 	db *sql.DB
 }
+
+var _ qc.TxProcessor = DBAdapter{}
 
 // NewDBAdapterVal создаёт адаптер для *sql.DB к интерфейсу TxProcessor.
 // EN: NewDBAdapterVal creates an adapter from *sql.DB to the TxProcessor interface.
@@ -41,6 +43,8 @@ func (a DBAdapter) QueryRowContext(ctx context.Context, query string, args ...an
 type TxAdapter struct {
 	tx *sql.Tx
 }
+
+var _ qc.TxProcessor = TxAdapter{}
 
 // NewTxAdapterVal создаёт адаптер для *sql.Tx к интерфейсу TxProcessor.
 // EN: NewTxAdapterVal creates an adapter from *sql.Tx to the TxProcessor interface.

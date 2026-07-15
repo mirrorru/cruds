@@ -6,9 +6,9 @@ package repo
 import (
 	"context"
 	"errors"
+	"quick-crud"
 	"strings"
 
-	"quick-crud/contracts"
 	"quick-crud/defs"
 	"quick-crud/dialect"
 	"quick-crud/filter"
@@ -17,7 +17,7 @@ import (
 	"quick-crud/test/gen/model"
 )
 
-var _ contracts.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
+var _ quick_crud.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
 
 type TableProductRow struct {
 	dialect   dialect.SQLDialect
@@ -78,7 +78,7 @@ func (t *TableProductRow) updateArgs(row *model.ProductRow) []any {
 	return []any{row.Name, row.Price, row.Stock, row.ID }
 }
 
-func (t *TableProductRow) Ins(ctx context.Context, tx contracts.TxProcessor, row *model.ProductRow) (*model.ProductRow, contracts.Result, error) {
+func (t *TableProductRow) Ins(ctx context.Context, tx quick_crud.TxProcessor, row *model.ProductRow) (*model.ProductRow, quick_crud.Result, error) {
 	args := t.insertArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
@@ -91,7 +91,7 @@ func (t *TableProductRow) Ins(ctx context.Context, tx contracts.TxProcessor, row
 	return buf, nil, err
 }
 
-func (t *TableProductRow) Upd(ctx context.Context, tx contracts.TxProcessor, row *model.ProductRow) (*model.ProductRow, contracts.Result, error) {
+func (t *TableProductRow) Upd(ctx context.Context, tx quick_crud.TxProcessor, row *model.ProductRow) (*model.ProductRow, quick_crud.Result, error) {
 	args := t.updateArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
@@ -104,7 +104,7 @@ func (t *TableProductRow) Upd(ctx context.Context, tx contracts.TxProcessor, row
 	return buf, nil, err
 }
 
-func (t *TableProductRow) One(ctx context.Context, tx contracts.TxProcessor, keys ...any) (*model.ProductRow, error) {
+func (t *TableProductRow) One(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (*model.ProductRow, error) {
 	buf := new(model.ProductRow)
 	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
@@ -112,11 +112,11 @@ func (t *TableProductRow) One(ctx context.Context, tx contracts.TxProcessor, key
 	return buf, err
 }
 
-func (t *TableProductRow) Del(ctx context.Context, tx contracts.TxProcessor, keys ...any) (contracts.Result, error) {
+func (t *TableProductRow) Del(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (quick_crud.Result, error) {
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *TableProductRow) Many(ctx context.Context, tx contracts.TxProcessor, filter *filter.Filter) (result []*model.ProductRow, err error) {
+func (t *TableProductRow) Many(ctx context.Context, tx quick_crud.TxProcessor, filter *filter.Filter) (result []*model.ProductRow, err error) {
 	var (
 		query strings.Builder
 		args  []any

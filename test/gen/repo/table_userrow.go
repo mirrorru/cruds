@@ -6,9 +6,9 @@ package repo
 import (
 	"context"
 	"errors"
+	"quick-crud"
 	"strings"
 
-	"quick-crud/contracts"
 	"quick-crud/defs"
 	"quick-crud/dialect"
 	"quick-crud/filter"
@@ -17,7 +17,7 @@ import (
 	"quick-crud/test/gen/model"
 )
 
-var _ contracts.TypedTable[model.UserRow] = (*TableUserRow)(nil)
+var _ quick_crud.TypedTable[model.UserRow] = (*TableUserRow)(nil)
 
 type TableUserRow struct {
 	dialect   dialect.SQLDialect
@@ -77,7 +77,7 @@ func (t *TableUserRow) updateArgs(row *model.UserRow) []any {
 	return []any{row.Name, row.Age, row.ID }
 }
 
-func (t *TableUserRow) Ins(ctx context.Context, tx contracts.TxProcessor, row *model.UserRow) (*model.UserRow, contracts.Result, error) {
+func (t *TableUserRow) Ins(ctx context.Context, tx quick_crud.TxProcessor, row *model.UserRow) (*model.UserRow, quick_crud.Result, error) {
 	args := t.insertArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
@@ -90,7 +90,7 @@ func (t *TableUserRow) Ins(ctx context.Context, tx contracts.TxProcessor, row *m
 	return buf, nil, err
 }
 
-func (t *TableUserRow) Upd(ctx context.Context, tx contracts.TxProcessor, row *model.UserRow) (*model.UserRow, contracts.Result, error) {
+func (t *TableUserRow) Upd(ctx context.Context, tx quick_crud.TxProcessor, row *model.UserRow) (*model.UserRow, quick_crud.Result, error) {
 	args := t.updateArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
@@ -103,7 +103,7 @@ func (t *TableUserRow) Upd(ctx context.Context, tx contracts.TxProcessor, row *m
 	return buf, nil, err
 }
 
-func (t *TableUserRow) One(ctx context.Context, tx contracts.TxProcessor, keys ...any) (*model.UserRow, error) {
+func (t *TableUserRow) One(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (*model.UserRow, error) {
 	buf := new(model.UserRow)
 	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
@@ -111,11 +111,11 @@ func (t *TableUserRow) One(ctx context.Context, tx contracts.TxProcessor, keys .
 	return buf, err
 }
 
-func (t *TableUserRow) Del(ctx context.Context, tx contracts.TxProcessor, keys ...any) (contracts.Result, error) {
+func (t *TableUserRow) Del(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (quick_crud.Result, error) {
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *TableUserRow) Many(ctx context.Context, tx contracts.TxProcessor, filter *filter.Filter) (result []*model.UserRow, err error) {
+func (t *TableUserRow) Many(ctx context.Context, tx quick_crud.TxProcessor, filter *filter.Filter) (result []*model.UserRow, err error) {
 	var (
 		query strings.Builder
 		args  []any

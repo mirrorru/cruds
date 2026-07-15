@@ -83,7 +83,6 @@ func main() {
 
 | Пакет | Описание |
 |-------|----------|
-| `contracts` | Интерфейсы (`TxProcessor`, `Row`, `Result`, `Rows`) |
 | `dialect` | SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`) |
 | `filter` | Система фильтрации |
 | `struct_info` | Метаданные таблиц и полей |

@@ -5,7 +5,7 @@ package repo
 import (
 	"context"
 	"database/sql"
-	"quick-crud/contracts"
+	"quick-crud"
 	"quick-crud/dialect"
 	"quick-crud/filter"
 	"quick-crud/test/gen/model"
@@ -76,25 +76,25 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 }
 
-func (e *testEnv) TxProcessor() contracts.TxProcessor {
+func (e *testEnv) TxProcessor() quick_crud.TxProcessor {
 	return tx_adapter.NewDBAdapterVal(e.db)
 }
 
 func TestTableUserRow_Interface(t *testing.T) {
 	t.Parallel()
-	var _ contracts.TypedTable[model.UserRow] = (*TableUserRow)(nil)
+	var _ quick_crud.TypedTable[model.UserRow] = (*TableUserRow)(nil)
 }
 
 func TestTableProductRow_Interface(t *testing.T) {
 	t.Parallel()
-	var _ contracts.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
+	var _ quick_crud.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
 }
 
 func TestTableUserRow_Internals(t *testing.T) {
 	t.Parallel()
 	table := NewTableUserRow(dialect.SQLiteDialect{})
 	internals := table.Internals()
-	
+
 	assert.Equal(t, "user_row", internals.TableInfo.SQLName)
 	require.Len(t, internals.TableInfo.Fields, 3)
 	assert.Equal(t, "id", internals.TableInfo.Fields[0].SQLName)
@@ -106,7 +106,7 @@ func TestTableProductRow_Internals(t *testing.T) {
 	t.Parallel()
 	table := NewTableProductRow(dialect.SQLiteDialect{})
 	internals := table.Internals()
-	
+
 	assert.Equal(t, "products", internals.TableInfo.SQLName)
 	require.Len(t, internals.TableInfo.Fields, 4)
 	assert.Equal(t, "id", internals.TableInfo.Fields[0].SQLName)
@@ -120,7 +120,7 @@ func TestTableUserRow_One(t *testing.T) {
 	env := newTestEnv(t)
 	table := NewTableUserRow(dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
-	
+
 	row, err := table.One(env.ctx, tx, 1)
 	require.NoError(t, err)
 	assert.Equal(t, 1, row.ID)
@@ -133,7 +133,7 @@ func TestTableProductRow_One(t *testing.T) {
 	env := newTestEnv(t)
 	table := NewTableProductRow(dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
-	
+
 	row, err := table.One(env.ctx, tx, 1)
 	require.NoError(t, err)
 	assert.Equal(t, 1, row.ID)
@@ -147,18 +147,18 @@ func TestTableUserRow_Many(t *testing.T) {
 	env := newTestEnv(t)
 	table := NewTableUserRow(dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
-	
+
 	rows, err := table.Many(env.ctx, tx, nil)
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)
-	
+
 	rows, err = table.Many(env.ctx, tx, &filter.Filter{
 		Offset: 1,
 		Limit:  2,
 	})
 	require.NoError(t, err)
 	assert.Len(t, rows, 2)
-	
+
 	rows, err = table.Many(env.ctx, tx, &filter.Filter{
 		Range: filter.ConditionNode{
 			FieldIdx: 0,
@@ -176,11 +176,11 @@ func TestTableProductRow_Many(t *testing.T) {
 	env := newTestEnv(t)
 	table := NewTableProductRow(dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
-	
+
 	rows, err := table.Many(env.ctx, tx, nil)
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)
-	
+
 	rows, err = table.Many(env.ctx, tx, &filter.Filter{
 		Range: filter.ConditionNode{
 			FieldIdx: 2,
@@ -198,26 +198,26 @@ func TestTableUserRow_AllCRUD(t *testing.T) {
 	table := NewTableUserRow(dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
 	ctx := env.ctx
-	
+
 	alice, _, err := table.Ins(ctx, tx, &model.UserRow{Name: "Alice", Age: 1})
 	require.NoError(t, err)
 	require.Equal(t, "Alice", alice.Name)
 	require.Equal(t, 1, alice.Age)
 	require.Greater(t, alice.ID, 0)
-	
+
 	alice2, err := table.One(ctx, tx, alice.ID)
 	assert.NotSame(t, alice, alice2)
 	assert.Equal(t, *alice, *alice2)
-	
+
 	alice2.Age = 11
 	alice, _, err = table.Upd(ctx, tx, alice2)
 	assert.NotSame(t, alice2, alice)
 	assert.Equal(t, *alice2, *alice)
-	
+
 	rows, err := table.Many(ctx, tx, nil)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(rows), 1)
-	
+
 	found := false
 	for _, r := range rows {
 		if r.ID == alice.ID {
@@ -226,10 +226,10 @@ func TestTableUserRow_AllCRUD(t *testing.T) {
 		}
 	}
 	require.True(t, found, "Alice should be in the list")
-	
+
 	_, err = table.Del(ctx, tx, alice.ID)
 	require.NoError(t, err)
-	
+
 	_, err = table.One(ctx, tx, alice.ID)
 	require.Error(t, err)
 }
@@ -240,28 +240,28 @@ func TestTableProductRow_AllCRUD(t *testing.T) {
 	table := NewTableProductRow(dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
 	ctx := env.ctx
-	
+
 	widget, _, err := table.Ins(ctx, tx, &model.ProductRow{Name: "Widget", Price: 19.99, Stock: 100})
 	require.NoError(t, err)
 	require.Equal(t, "Widget", widget.Name)
 	require.Equal(t, 19.99, widget.Price)
 	require.Equal(t, 100, widget.Stock)
 	require.Greater(t, widget.ID, 0)
-	
+
 	widget2, err := table.One(ctx, tx, widget.ID)
 	assert.NotSame(t, widget, widget2)
 	assert.Equal(t, *widget, *widget2)
-	
+
 	widget2.Price = 24.99
 	widget2.Stock = 80
 	widget, _, err = table.Upd(ctx, tx, widget2)
 	assert.NotSame(t, widget2, widget)
 	assert.Equal(t, *widget2, *widget)
-	
+
 	rows, err := table.Many(ctx, tx, nil)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(rows), 1)
-	
+
 	found := false
 	for _, r := range rows {
 		if r.ID == widget.ID {
@@ -271,10 +271,10 @@ func TestTableProductRow_AllCRUD(t *testing.T) {
 		}
 	}
 	require.True(t, found, "Widget should be in the list")
-	
+
 	_, err = table.Del(ctx, tx, widget.ID)
 	require.NoError(t, err)
-	
+
 	_, err = table.One(ctx, tx, widget.ID)
 	require.Error(t, err)
 }

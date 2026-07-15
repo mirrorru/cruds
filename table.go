@@ -3,7 +3,6 @@ package quick_crud
 import (
 	"context"
 	"errors"
-	"quick-crud/contracts"
 	"quick-crud/defs"
 	"quick-crud/dialect"
 	"quick-crud/filter"
@@ -46,7 +45,7 @@ func (t *Table[ROW]) Internals() tableInternals {
 	}
 }
 
-func (t *Table[ROW]) Ins(ctx context.Context, tx contracts.TxProcessor, row *ROW) (*ROW, contracts.Result, error) {
+func (t *Table[ROW]) Ins(ctx context.Context, tx TxProcessor, row *ROW) (*ROW, Result, error) {
 	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.InsertIdxList)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
@@ -59,7 +58,7 @@ func (t *Table[ROW]) Ins(ctx context.Context, tx contracts.TxProcessor, row *ROW
 	return buf, nil, err
 }
 
-func (t *Table[ROW]) Upd(ctx context.Context, tx contracts.TxProcessor, row *ROW) (*ROW, contracts.Result, error) {
+func (t *Table[ROW]) Upd(ctx context.Context, tx TxProcessor, row *ROW) (*ROW, Result, error) {
 	args := t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.UpdateIdxList)
 	args = append(args,
 		t.tableInfo.Fields.ExtractArgs(row, t.tableInfo.PKIdxList)...,
@@ -75,7 +74,7 @@ func (t *Table[ROW]) Upd(ctx context.Context, tx contracts.TxProcessor, row *ROW
 	return buf, nil, err
 }
 
-func (t *Table[ROW]) One(ctx context.Context, tx contracts.TxProcessor, keys ...any) (*ROW, error) {
+func (t *Table[ROW]) One(ctx context.Context, tx TxProcessor, keys ...any) (*ROW, error) {
 	buf := new(ROW)
 	refs := t.tableInfo.Fields.ExtractRefs(buf, t.tableInfo.SelectIdxList)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
@@ -83,11 +82,11 @@ func (t *Table[ROW]) One(ctx context.Context, tx contracts.TxProcessor, keys ...
 	return buf, err
 }
 
-func (t *Table[ROW]) Del(ctx context.Context, tx contracts.TxProcessor, keys ...any) (contracts.Result, error) {
+func (t *Table[ROW]) Del(ctx context.Context, tx TxProcessor, keys ...any) (Result, error) {
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *Table[ROW]) Many(ctx context.Context, tx contracts.TxProcessor, filter *filter.Filter) (result []*ROW, err error) {
+func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *filter.Filter) (result []*ROW, err error) {
 	var (
 		query strings.Builder
 		args  []any

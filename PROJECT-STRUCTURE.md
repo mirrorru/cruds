@@ -4,6 +4,7 @@
 
 ### Корневой пакет (quick-crud)
 - `table.go` — универсальная реализация `Table[ROW]` с использованием reflection
+- `contracts.go` — интерфейсы и контракты (`TypedTable[ROW]`, `TxProcessor`, `Row`, `Result`, `Rows`)
 - `dialect_vars.go` — пакетные переменные-алиасы для SQL-диалектов (`SQLite`, `PostgresSQL`), предоставляющие удобный доступ к реализациям диалектов без импорта пакета `dialect`
 
 ### cmd/qcgen
@@ -23,11 +24,6 @@
 go install ./cmd/qcgen
 qcgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 ```
-
-### contracts
-Интерфейсы и контракты:
-- `TxProcessor` — интерфейс для работы с транзакциями
-- `TypedTable[ROW]` — интерфейс для типизированных таблиц
 
 ### dialect
 SQL диалекты:

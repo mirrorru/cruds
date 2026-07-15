@@ -83,7 +83,6 @@ The root package provides package-level variables for convenient dialect access:
 
 | Package | Description |
 |---------|-------------|
-| `contracts` | Interfaces (`TxProcessor`, `Row`, `Result`, `Rows`) |
 | `dialect` | SQL dialects (`PostgreSQLDialect`, `SQLiteDialect`) |
 | `filter` | Filter system |
 | `struct_info` | Table and field metadata |

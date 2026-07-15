@@ -8,7 +8,7 @@ Domain Driven Design & Clean Architecture.
 
 ### Domain Layer (Доменный слой)
 
-- **contracts** — интерфейсы и контракты (`TxProcessor`, `Row`, `Result`, `Rows`, `TypedTable[ROW]`)
+- **contracts.go (корневой пакет)** — интерфейсы и контракты (`TypedTable[ROW]`, `TxProcessor`, `Row`, `Result`, `Rows`)
 - Определяют абстракции, не зависят от реализаций
 
 ### Application Layer (Слой приложения)

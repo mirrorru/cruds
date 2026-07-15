@@ -22,7 +22,6 @@ Quick CRUD предоставляет типобезопасный слой дл
 
 ### Структура пакетов
 
-- `contracts` — интерфейсы (`TxProcessor`, `Row`, `Result`, `Rows`)
 - `dialect` — SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`)
 - `filter` — система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`)
 - `struct_info` — метаданные таблиц и полей (парсинг тегов, извлечение информации)
