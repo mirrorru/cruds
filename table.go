@@ -15,7 +15,7 @@ import (
 
 type Table[ROW any] struct {
 	dialect   dialect.SQLDialect
-	tableInfo struct_info.TableInfo
+	tableInfo *struct_info.TableInfo
 	sqlTexts  struct_info.SqlTexts
 }
 
@@ -25,7 +25,7 @@ func NewTableVal[ROW any](d dialect.SQLDialect) Table[ROW] {
 	return Table[ROW]{
 		dialect:   d,
 		tableInfo: tableInfo,
-		sqlTexts:  struct_info.SqlBuilderVal.SQLTexts(d, &tableInfo),
+		sqlTexts:  struct_info.SqlBuilderVal.SQLTexts(d, tableInfo),
 	}
 }
 
@@ -34,7 +34,7 @@ func NewTable[ROW any](d dialect.SQLDialect) *Table[ROW] {
 }
 
 type tableInternals struct {
-	TableInfo struct_info.TableInfo
+	TableInfo *struct_info.TableInfo
 	SqlTexts  struct_info.SqlTexts
 }
 

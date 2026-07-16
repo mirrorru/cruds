@@ -28,7 +28,7 @@ const (
 // QueryTableInfo метаинформация для одной таблицы в Query.
 // EN: QueryTableInfo metadata for one table in Query.
 type QueryTableInfo struct {
-	TableInfo  TableInfo
+	TableInfo  *TableInfo
 	Alias      string
 	JoinType   string // "left", "right", "inner"
 	IsFrom     bool

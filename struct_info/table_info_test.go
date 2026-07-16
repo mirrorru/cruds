@@ -80,7 +80,7 @@ func TestGetTableInfo(t *testing.T) {
 		t.Run(tt.reflectType.Name(), func(t *testing.T) {
 			got, err := struct_info.GetTableInfo(tt.reflectType)
 			assert.NoError(t, err, tt.reflectType.Name())
-			assert.Equal(t, tt.expected, got, tt.reflectType.Name())
+			assert.Equal(t, &tt.expected, got, tt.reflectType.Name())
 		})
 	}
 }
