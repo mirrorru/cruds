@@ -5,6 +5,7 @@ package smoke
 import (
 	quick_crud "quick-crud"
 	"quick-crud/dialect"
+	"quick-crud/filter"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +60,7 @@ func TestTable_Many(t *testing.T) {
 	assert.Len(t, rows, 3)
 	require.Equal(t, []*IdNameAgeRowFilled{aliceIdNameAge, bobIdNameAge, unagedIdNameAge}, rows)
 
-	rows, err = table.Many(env.ctx, tx, &quick_crud.Filter{
+	rows, err = table.Many(env.ctx, tx, &filter.Filter{
 		Offset: 1,
 		Limit:  2,
 		Range:  nil,
@@ -68,12 +69,12 @@ func TestTable_Many(t *testing.T) {
 	assert.Len(t, rows, 2)
 	require.Equal(t, []*IdNameAgeRowFilled{bobIdNameAge, unagedIdNameAge}, rows)
 
-	rows, err = table.Many(env.ctx, tx, &quick_crud.Filter{
+	rows, err = table.Many(env.ctx, tx, &filter.Filter{
 		Offset: 0,
 		Limit:  0,
-		Range: quick_crud.ConditionNode{
+		Range: filter.ConditionNode{
 			FieldIdx: 0,
-			Op:       quick_crud.CmdEq,
+			Op:       filter.CmdEq,
 			Value:    2,
 		},
 	})

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"quick-crud/defs"
 	"quick-crud/dialect"
+	"quick-crud/filter"
 	"quick-crud/struct_info"
 	"reflect"
 	"strings"
@@ -15,7 +16,7 @@ import (
 type Table[ROW any] struct {
 	dialect   dialect.SQLDialect
 	tableInfo struct_info.TableInfo
-	sqlTexts  sqlTexts
+	sqlTexts  struct_info.SqlTexts
 }
 
 func NewTableVal[ROW any](d dialect.SQLDialect) Table[ROW] {
@@ -24,7 +25,7 @@ func NewTableVal[ROW any](d dialect.SQLDialect) Table[ROW] {
 	return Table[ROW]{
 		dialect:   d,
 		tableInfo: tableInfo,
-		sqlTexts:  sqlBuilderVal.SQLTexts(d, &tableInfo),
+		sqlTexts:  struct_info.SqlBuilderVal.SQLTexts(d, &tableInfo),
 	}
 }
 
@@ -34,7 +35,7 @@ func NewTable[ROW any](d dialect.SQLDialect) *Table[ROW] {
 
 type tableInternals struct {
 	TableInfo struct_info.TableInfo
-	SqlTexts  sqlTexts
+	SqlTexts  struct_info.SqlTexts
 }
 
 func (t *Table[ROW]) Internals() tableInternals {
@@ -85,7 +86,7 @@ func (t *Table[ROW]) Del(ctx context.Context, tx TxProcessor, keys ...any) (Resu
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *Filter) (result []*ROW, err error) {
+func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *filter.Filter) (result []*ROW, err error) {
 	var (
 		query strings.Builder
 		args  []any

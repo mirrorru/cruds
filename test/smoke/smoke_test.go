@@ -5,7 +5,7 @@ package smoke
 import (
 	"context"
 	"database/sql"
-	quick_crud "quick-crud"
+	"quick-crud"
 	"quick-crud/tx_adapter"
 	"sync"
 	"testing"

@@ -2,11 +2,10 @@ package tx_adapter
 
 import (
 	"context"
+	qc "quick-crud"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-
-	qc "quick-crud"
 )
 
 // PGXAdapter адаптирует *pgx.Conn к интерфейсу TxProcessor.
@@ -14,6 +13,8 @@ import (
 type PGXAdapter struct {
 	conn *pgx.Conn
 }
+
+var _ qc.TxProcessor = PGXAdapter{}
 
 // NewPGXAdapterVal создаёт адаптер для *pgx.Conn к интерфейсу TxProcessor.
 // EN: NewPGXAdapterVal creates an adapter from *pgx.Conn to the TxProcessor interface.
@@ -53,6 +54,8 @@ type PGXTxAdapter struct {
 	tx pgx.Tx
 }
 
+var _ qc.TxProcessor = PGXTxAdapter{}
+
 // NewPGXTxAdapterVal создаёт адаптер для pgx.Tx к интерфейсу TxProcessor.
 // EN: NewPGXTxAdapterVal creates an adapter from pgx.Tx to the TxProcessor interface.
 func NewPGXTxAdapterVal(tx pgx.Tx) PGXTxAdapter {
@@ -91,6 +94,8 @@ type PgxResult struct {
 	tag pgconn.CommandTag
 }
 
+var _ qc.Result = (*PgxResult)(nil)
+
 // LastInsertId возвращает ID последней вставленной строки (не поддерживается в PostgreSQL).
 // EN: LastInsertId returns the ID of the last inserted row (not supported in PostgreSQL).
 func (r *PgxResult) LastInsertId() (int64, error) {
@@ -108,6 +113,8 @@ func (r *PgxResult) RowsAffected() (int64, error) {
 type PgxRows struct {
 	rows pgx.Rows
 }
+
+var _ qc.Rows = (*PgxRows)(nil)
 
 // Next переходит к следующей строке результата.
 // EN: Next advances to the next row in the result set.
