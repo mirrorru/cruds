@@ -1,4 +1,4 @@
-module quick-crud
+module github.com/mirrorru/crudquick
 
 go 1.26.3
 

@@ -3,7 +3,8 @@ package tx_adapter
 import (
 	"context"
 	"database/sql"
-	qc "quick-crud"
+
+	qc "github.com/mirrorru/crudquick"
 )
 
 // DBAdapter адаптирует *sql.DB к интерфейсу TxProcessor.

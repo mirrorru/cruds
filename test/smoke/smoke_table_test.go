@@ -3,10 +3,10 @@
 package smoke
 
 import (
-	quick_crud "quick-crud"
-	"quick-crud/dialect"
-	"quick-crud/filter"
 	"testing"
+
+	"github.com/mirrorru/crudquick"
+	"github.com/mirrorru/crudquick/dialect"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +14,7 @@ import (
 
 func TestTable_IdNameAgeRowFilled(t *testing.T) {
 	t.Parallel()
-	table := quick_crud.NewTable[IdNameAgeRowFilled](dialect.SQLiteDialect{})
+	table := crudquick.NewTable[IdNameAgeRowFilled](dialect.SQLiteDialect{})
 	tableInfo := table.Internals().TableInfo
 	assert.Equal(t, "id_name_age_filled", tableInfo.SQLName)
 	require.Len(t, tableInfo.Fields, 3)
@@ -25,7 +25,7 @@ func TestTable_IdNameAgeRowFilled(t *testing.T) {
 
 func TestTable_IdNameAgeRowRow(t *testing.T) {
 	t.Parallel()
-	table := quick_crud.NewTable[IdNameAgeRow](dialect.SQLiteDialect{})
+	table := crudquick.NewTable[IdNameAgeRow](dialect.SQLiteDialect{})
 	tableInfo := table.Internals().TableInfo
 	assert.Equal(t, "id_name_age_row", tableInfo.SQLName)
 	require.Len(t, tableInfo.Fields, 3)
@@ -43,7 +43,7 @@ var (
 func TestTable_One(t *testing.T) {
 	t.Parallel()
 	env := newTestEnv(t)
-	table := quick_crud.NewTable[IdNameAgeRowFilled](dialect.SQLiteDialect{})
+	table := crudquick.NewTable[IdNameAgeRowFilled](dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
 	row, err := table.One(env.ctx, tx, 1)
 	require.NoError(t, err)
@@ -53,14 +53,14 @@ func TestTable_One(t *testing.T) {
 func TestTable_Many(t *testing.T) {
 	t.Parallel()
 	env := newTestEnv(t)
-	table := quick_crud.NewTable[IdNameAgeRowFilled](dialect.SQLiteDialect{})
+	table := crudquick.NewTable[IdNameAgeRowFilled](dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
 	rows, err := table.Many(env.ctx, tx, nil)
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)
 	require.Equal(t, []*IdNameAgeRowFilled{aliceIdNameAge, bobIdNameAge, unagedIdNameAge}, rows)
 
-	rows, err = table.Many(env.ctx, tx, &filter.Filter{
+	rows, err = table.Many(env.ctx, tx, &crudquick.Filter{
 		Offset: 1,
 		Limit:  2,
 		Range:  nil,
@@ -69,12 +69,12 @@ func TestTable_Many(t *testing.T) {
 	assert.Len(t, rows, 2)
 	require.Equal(t, []*IdNameAgeRowFilled{bobIdNameAge, unagedIdNameAge}, rows)
 
-	rows, err = table.Many(env.ctx, tx, &filter.Filter{
+	rows, err = table.Many(env.ctx, tx, &crudquick.Filter{
 		Offset: 0,
 		Limit:  0,
-		Range: filter.ConditionNode{
+		Range: crudquick.ConditionNode{
 			FieldIdx: 0,
-			Op:       filter.CmdEq,
+			Op:       crudquick.CmdEq,
 			Value:    2,
 		},
 	})
@@ -87,7 +87,7 @@ func TestTable_Many(t *testing.T) {
 func TestTable_AllCRUD(t *testing.T) {
 	t.Parallel()
 	env := newTestEnv(t)
-	table := quick_crud.NewTable[IdNameAgeRow](dialect.SQLiteDialect{})
+	table := crudquick.NewTable[IdNameAgeRow](dialect.SQLiteDialect{})
 	tx := env.TxProcessor()
 	ctx := env.ctx
 	colin, _, err := table.Ins(ctx, tx, &IdNameAgeRow{Name: "Colin", Age: 33})

@@ -2,8 +2,8 @@
 
 Библиотека для упрощения реализации CRUD-операций со структурами на Go с использованием дженериков.
 
-**Repo**: github.com/mirrorru/quick-crud
-**Go-модуль**: `quick-crud` (go.mod инициализирован, Go 1.26.3)
+**Repo**: github.com/mirrorru/crudquick
+**Go-модуль**: `crudquick` (go.mod инициализирован, Go 1.26.3)
 **Язык взаимодействия**: русский
 
 ## Описание
@@ -13,6 +13,7 @@ Quick CRUD предоставляет типобезопасный слой дл
 ### Основные возможности
 
 - **CRUD-операции**: `Ins` (insert), `Upd` (update), `One` (select by PK), `Del` (delete), `Many` (select with filter)
+- **Мульти-табличные запросы**: `Query[T]` для JOIN'ов между таблицами с автоматической генерацией SQL
 - **Поддержка БД**: PostgreSQL (с RETURNING), SQLite (с RETURNING)
 - **Удобные алиасы диалектов**: пакетные переменные `SQLite` и `PostgresSQL` в корневом пакете для доступа к диалектам без импорта пакета `dialect`
 - **Система тегов**: настройка поведения полей через struct tag `tbl`
@@ -23,7 +24,6 @@ Quick CRUD предоставляет типобезопасный слой дл
 ### Структура пакетов
 
 - `dialect` — SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`)
-- `filter` — система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`)
 - `struct_info` — метаданные таблиц и полей (парсинг тегов, извлечение информации)
 - `tx_adapter` — адаптеры для `pgx.Conn`, `pgx.Tx`, `*sql.DB`, `*sql.Tx`
 - `defs` — SQL-константы
@@ -41,5 +41,23 @@ Quick CRUD предоставляет типобезопасный слой дл
 - `upd` — принудительное обновление поля
 - `rskip` — пропуск при SELECT
 - `prefix=<prefix>` — префикс для вложенных колонок
-- `ref=<table>,<field>` — внешний ключ
+- `ref=<table>:<field>` — внешний ключ (используется для JOIN условий в Query)
 - `sort=<pos>[:desc]` — сортировка (позиция и направление)
+
+### Теги для Query-структур (`tbl:"..."` на полях Query)
+
+Query-структура `T` содержит поля-ROW структуры для мульти-табличных запросов:
+
+- `from` —标记 primary FROM таблицу (только одна; по умолчанию = первая non-omit поле)
+- `join=left|right|inner` — тип JOIN (по умолчанию зависит от pointer-типа)
+- `alias=<name>` — SQL алиас для таблицы
+- `map=<table>:<alias>,...` — маппинг имен таблиц из `ref=` к алиасам в запросе
+- `pk` — использовать PK этой таблицы для `One()` WHERE (по умолчанию = PK FROM таблицы)
+- `omit` — исключить таблицу из запроса
+- `sort=<pos>` — приоритет таблицы в ORDER BY
+
+**Правила типа JOIN по умолчанию:**
+- FROM таблица — pointer → все JOIN'ы по умолчанию LEFT
+- FROM таблица — не pointer:
+  - T-поле — не pointer → INNER
+  - T-поле — pointer → LEFT

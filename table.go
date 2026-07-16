@@ -1,14 +1,14 @@
-package quick_crud
+package crudquick
 
 import (
 	"context"
 	"errors"
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/struct_info"
 	"reflect"
 	"strings"
+
+	"github.com/mirrorru/crudquick/defs"
+	"github.com/mirrorru/crudquick/dialect"
+	"github.com/mirrorru/crudquick/struct_info"
 
 	"github.com/mirrorru/dot"
 )
@@ -86,7 +86,7 @@ func (t *Table[ROW]) Del(ctx context.Context, tx TxProcessor, keys ...any) (Resu
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *filter.Filter) (result []*ROW, err error) {
+func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *Filter) (result []*ROW, err error) {
 	var (
 		query strings.Builder
 		args  []any

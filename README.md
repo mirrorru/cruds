@@ -17,7 +17,7 @@
 ## Установка
 
 ```bash
-go get github.com/mirrorru/quick-crud
+go get github.com/mirrorru/crudquick
 ```
 
 ## Быстрый старт
@@ -27,7 +27,7 @@ package main
 
 import (
     "context"
-    qc "quick-crud"
+    qc "github.com/mirrorru/crudquick"
 )
 
 type UserRow struct {

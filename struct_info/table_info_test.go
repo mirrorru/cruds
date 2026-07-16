@@ -1,10 +1,11 @@
 package struct_info_test
 
 import (
-	"quick-crud/struct_info"
-	"quick-crud/test/samples"
 	"reflect"
 	"testing"
+
+	"github.com/mirrorru/crudquick/struct_info"
+	"github.com/mirrorru/crudquick/test/samples"
 
 	"github.com/stretchr/testify/assert"
 )

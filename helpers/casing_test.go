@@ -1,8 +1,9 @@
 package helpers_test
 
 import (
-	"quick-crud/helpers"
 	"testing"
+
+	"github.com/mirrorru/crudquick/helpers"
 
 	"github.com/stretchr/testify/assert"
 )

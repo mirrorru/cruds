@@ -2,8 +2,9 @@ package struct_info
 
 import (
 	"fmt"
-	"quick-crud/helpers"
 	"reflect"
+
+	"github.com/mirrorru/crudquick/helpers"
 )
 
 type TableInfo struct {

@@ -2,12 +2,13 @@ package struct_info
 
 import (
 	"errors"
-	"quick-crud/helpers"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/mirrorru/crudquick/helpers"
 )
 
 var tagName = "tbl"

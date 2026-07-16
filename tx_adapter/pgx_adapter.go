@@ -2,9 +2,10 @@ package tx_adapter
 
 import (
 	"context"
-	qc "quick-crud"
 
 	"github.com/jackc/pgx/v5"
+	qc "github.com/mirrorru/crudquick"
+
 	"github.com/jackc/pgx/v5/pgconn"
 )
 

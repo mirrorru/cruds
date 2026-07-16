@@ -5,12 +5,13 @@ package smoke
 import (
 	"context"
 	"database/sql"
-	"quick-crud"
-	"quick-crud/tx_adapter"
 	"sync"
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
+	"github.com/mirrorru/crudquick"
+	"github.com/mirrorru/crudquick/tx_adapter"
+
 	"github.com/mirrorru/dot"
 	_ "modernc.org/sqlite"
 )
@@ -65,6 +66,6 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 }
 
-func (e *testEnv) TxProcessor() quick_crud.TxProcessor {
+func (e *testEnv) TxProcessor() crudquick.TxProcessor {
 	return tx_adapter.NewDBAdapterVal(e.db)
 }

@@ -17,7 +17,7 @@ A library to simplify CRUD operations with Go structs using generics.
 ## Installation
 
 ```bash
-go get github.com/mirrorru/quick-crud
+go get github.com/mirrorru/crudquick
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ package main
 
 import (
     "context"
-    qc "quick-crud"
+    qc "github.com/mirrorru/crudquick"
 )
 
 type UserRow struct {

@@ -9,11 +9,12 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"quick-crud/helpers"
 	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/mirrorru/crudquick/helpers"
 )
 
 type srcSpec struct {
@@ -719,11 +720,11 @@ import (
 	"errors"
 	"strings"
 
-	"quick-crud/contracts"
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/struct_info"
+	"github.com/mirrorru/crudquick/contracts"
+	"github.com/mirrorru/crudquick/defs"
+	"github.com/mirrorru/crudquick/dialect"
+	"github.com/mirrorru/crudquick/filter"
+	"github.com/mirrorru/crudquick/struct_info"
 
 	"{{.TypeInfo.PkgPath}}"
 )

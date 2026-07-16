@@ -1,8 +1,7 @@
-package quick_crud
+package crudquick
 
 import (
 	"context"
-	"quick-crud/filter"
 )
 
 // TypedTable defines the interface for typed table implementations.
@@ -12,7 +11,7 @@ type TypedTable[ROW any] interface {
 	Upd(ctx context.Context, tx TxProcessor, row *ROW) (*ROW, Result, error)
 	One(ctx context.Context, tx TxProcessor, keys ...any) (*ROW, error)
 	Del(ctx context.Context, tx TxProcessor, keys ...any) (Result, error)
-	Many(ctx context.Context, tx TxProcessor, filter *filter.Filter) ([]*ROW, error)
+	Many(ctx context.Context, tx TxProcessor, filter *Filter) ([]*ROW, error)
 }
 
 // TxProcessor описывает интерфейс выполнения SQL-запросов.

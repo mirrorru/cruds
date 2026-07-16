@@ -13,14 +13,13 @@ Domain Driven Design & Clean Architecture.
 
 ### Application Layer (Слой приложения)
 
-- **Корневой пакет (quick-crud)** — универсальная реализация `Table[ROW]` с использованием reflection
+- **Корневой пакет (crudquick)** — универсальная реализация `Table[ROW]`, `Query[T]` и система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`) с использованием reflection
 - **dialect_vars.go** — пакетные переменные-алиасы (`SQLite`, `PostgresSQL`) для удобного доступа к диалектам без импорта пакета `dialect`
 - **cmd/qcgen** — генератор кода для создания типизированных реализаций без reflection
 
 ### Infrastructure Layer (Инфраструктурный слой)
 
 - **dialect** — SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`)
-- **filter** — система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`)
 - **struct_info** — метаданные таблиц и полей (парсинг тегов, извлечение информации)
 - **tx_adapter** — адаптеры для работы с БД (`pgx.Conn`, `pgx.Tx`, `*sql.DB`, `*sql.Tx`)
 - **defs** — SQL-константы
@@ -28,12 +27,13 @@ Domain Driven Design & Clean Architecture.
 
 ## Потоки данных
 
-1. Пользовательский код вызывает CRUD-методы `Table[ROW]`
+1. Пользовательский код вызывает CRUD-методы `Table[ROW]` или `Query[T]`
 2. `Table[ROW]` использует `struct_info` для получения метаданных структуры
-3. `dialect` формирует SQL-запросы с учётом особенностей БД
-4. `filter` строит дерево условий для WHERE-_clause
-5. `tx_adapter` выполняет запросы через `pgx` или `database/sql`
-6. Результаты маппятся обратно в структуры через reflection или сгенерированный код
+3. `Query[T]` использует `struct_info` для получения метаданных мульти-табличного запроса с JOIN'ами
+4. `dialect` формирует SQL-запросы с учётом особенностей БД
+5. Система фильтрации (в корневом пакете) строит дерево условий для WHERE-_clause
+6. `tx_adapter` выполняет запросы через `pgx` или `database/sql`
+7. Результаты маппятся обратно в структуры через reflection или сгенерированный код
 
 ## Генератор кода (cmd/qcgen)
 

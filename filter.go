@@ -1,11 +1,12 @@
-package filter
+package crudquick
 
 import (
 	"fmt"
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/struct_info"
 	"strings"
+
+	"github.com/mirrorru/crudquick/defs"
+	"github.com/mirrorru/crudquick/dialect"
+	"github.com/mirrorru/crudquick/struct_info"
 )
 
 type CommandOp int32
