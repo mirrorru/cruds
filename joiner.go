@@ -2,6 +2,7 @@ package crudquick
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -62,7 +63,7 @@ func (j *Joiner[JT]) makeRefs(in *JT) []any {
 
 func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 	pos := 0
-	rv := reflect.ValueOf(in).Elem()
+	elem := reflect.ValueOf(in).Elem()
 	for _, table := range j.joinTables {
 		if !table.isPointer {
 			pos += len(table.tableInfo.SelectIdxList)
@@ -82,7 +83,7 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 			pos += len(table.tableInfo.SelectIdxList)
 			continue
 		}
-		tField := rv.FieldByIndex(table.index)
+		tField := elem.FieldByIndex(table.index)
 		tField.Set(reflect.New(tField.Type().Elem()))
 		tField = tField.Elem()
 		for _, fIdx := range table.tableInfo.SelectIdxList {
@@ -93,7 +94,15 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 				continue
 			}
 			fieldVal := tField.FieldByIndex(table.tableInfo.Fields[fIdx].Index)
-			fieldVal.Set(reflect.ValueOf(val))
+			//fieldVal.Set(reflect.ValueOf(val))
+			rv := reflect.ValueOf(val)
+			if rv.Type().AssignableTo(fieldVal.Type()) {
+				fieldVal.Set(rv)
+			} else if scanner, ok := fieldVal.Addr().Interface().(sql.Scanner); ok {
+				_ = scanner.Scan(val)
+			} else if rv.Type().ConvertibleTo(fieldVal.Type()) {
+				fieldVal.Set(rv.Convert(fieldVal.Type()))
+			}
 		}
 	}
 }
