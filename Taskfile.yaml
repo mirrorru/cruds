@@ -82,7 +82,7 @@ tasks:
   gen:crudsgen:
     desc: Генерация типизированных реализаций таблиц через crudsgen
     cmds:
-      - go run cmd/crudsgen/main.go -src=test/gen/model:*Row -dest=test/gen/repo
+      - go run cmd/crudsgen/main.go -src=test/gen/model:*Row -dest=test/gen/repo -table
 
 #.PHONY: lint
   lint:

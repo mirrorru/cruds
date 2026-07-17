@@ -15,13 +15,20 @@ tasks:
     desc: Запуск всех операций
     deps:
       - unit
-      - smoke
-      - functional
+      - gen:cruds
+      - gen:mocks
     cmds:
+      - task: parallel
       - echo "===== Все тесты завершены ====="
 
   gen:mocks:
     desc: Генерация моков
+
+  parallel:
+    deps:
+      - smoke
+      - crudsgen
+      - functional
 
   unit:
     desc: Все unit-тесты
@@ -32,7 +39,6 @@ tasks:
       - grep -v -e '_mock.go' -e '_mock_test.go' -e '_repo\.go' -e 'sql_gen/' {{.COVER_DIR}}/unit_raw.out > {{.COVER_DIR}}/unit.out
       - go tool cover -func={{.COVER_DIR}}/unit.out | grep -v -e '_mock' -e '_repo\.go' -e 'sql_gen/' | tee {{.COVER_DIR}}/unit.txt
 
-
   smoke:
     desc: "Smoke-тесты с покрытием (build tag: smoke)"
     cmds:
@@ -42,11 +48,30 @@ tasks:
       - grep -v -e '_mock.go' -e '_mock_test.go' {{.COVER_DIR}}/smoke_raw.out > {{.COVER_DIR}}/smoke.out
       - go tool cover -func={{.COVER_DIR}}/smoke.out | grep -v -e '_mock'
 
-  gen:test:
-    desc: "Тесты сгенерированного кода (build tag: smoke)"
+  gen:cruds:
+    desc: "Генерация структур для тестов"
+    cmds:
+      - task: gen:cruds:table
+      - task: gen:cruds:joiner
+
+  gen:cruds:table:
+    desc: "Генерация Table структур для тестов"
+    cmds:
+      - go run cmd/crudsgen/main.go -src="test/testmodels:UserRow" -src="test/testmodels:ProductRow" -src="test/testmodels:FuncRow" -src="test/testmodels:IdNameAgeRowFilled" -dest=test/testmodels -pkg=testmodels -no-genstr -build=smoke -build=crudsgen -build=functional -table
+
+  gen:cruds:joiner:
+    desc: "Генерация Joiner структур для тестов"
+    cmds:
+      - go run cmd/crudsgen/main.go -src="test/testmodels:JoinSample" -src="test/testmodels:JoinSummary" -dest=test/testmodels -pkg=testmodels -no-genstr -build=smoke -build=crudsgen -build=functional -joiner
+
+  crudsgen:
+    desc: "Тесты генератора (build tag: crudsgen)"
     cmds:
       - go vet ./...
-      - go test -count=1 -tags=smoke ./test/gen/repo/...
+      - mkdir -p {{.COVER_DIR}}
+      - go test -count=1 -tags=crudsgen -coverprofile={{.COVER_DIR}}/crudsgen_raw.out -coverpkg={{.COVER_PKGS}} ./test/crudsgen/...
+      - grep -v -e '_mock.go' -e '_mock_test.go' {{.COVER_DIR}}/crudsgen_raw.out > {{.COVER_DIR}}/crudsgen.out
+      - go tool cover -func={{.COVER_DIR}}/crudsgen.out | grep -v -e '_mock'
 
   concurrent:
     desc: "Тесты многопоточности (build tag: concurrent)"
@@ -77,14 +102,13 @@ tasks:
     cmds:
       - psql "{{.TEST_ROOT_DSN}}" -c "DROP DATABASE IF EXISTS \"{{.TEST_PG_DB}}\";"
 
-
   full-ci:
     desc: Полный CI-прогон
     deps:
       - unit
       - smoke
+      - crudsgen
       - functional
-
     cmds:
       - echo "===== Покрытие unit ====="
       - go tool cover -func={{.COVER_DIR}}/unit.out | grep -v -e '_mock' -e '_repo\.go' -e 'sql_gen/'

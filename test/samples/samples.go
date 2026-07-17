@@ -1,8 +1,8 @@
 package samples
 
 type IdNameSmpl struct {
-	ID   int    `tbl:"pk"`
-	Name string `tbl:"sort=1"`
+	ID   int    `crud:"pk"`
+	Name string `crud:"sort=1"`
 }
 
 type IdNameAgeSmpl struct {
@@ -11,13 +11,13 @@ type IdNameAgeSmpl struct {
 }
 
 type TwoKey struct {
-	Key1 int    `tbl:"pk"`
-	Key2 string `tbl:"pk"`
+	Key1 int    `crud:"pk"`
+	Key2 string `crud:"pk"`
 }
 
 type TwoFields struct {
-	Fld1 int    `tbl:"col=field_one"`
-	Fld2 string `tbl:"col=field_two"`
+	Fld1 int    `crud:"col=field_one"`
+	Fld2 string `crud:"col=field_two"`
 }
 
 type TwoCombo1Smpl struct {
@@ -36,5 +36,5 @@ type TwoCombo2Smpl struct {
 
 type TwoCombo3Smpl struct {
 	TwoKey            // expands to two fields
-	TwoFlds TwoFields `tbl:"embd"` // NOT expands to next two fields
+	TwoFlds TwoFields `crud:"embd"` // NOT expands to next two fields
 }

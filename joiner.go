@@ -10,17 +10,26 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/mirrorru/cruds/defs"
 	"github.com/mirrorru/cruds/dialect"
 	"github.com/mirrorru/cruds/struct_info"
 )
 
+type JoinTables []JoinTable
+
+type JoinerBase struct {
+	dialect    dialect.SQLDialect
+	joinTables JoinTables
+	allFields  struct_info.TableFields
+	fldPosMap  map[string]int
+	sql        joinerSQLs
+}
+
 type Joiner[JT any] struct {
 	// JT - joined tables
-	tsType     reflect.Type
-	joinTables []*JoinTable
-	joinerSQLs
+	JoinerBase
 }
 
 type joinerSQLs struct {
@@ -29,43 +38,50 @@ type joinerSQLs struct {
 	SortSQL    string
 }
 
-func (j *Joiner[JT]) Tables() []*JoinTable {
+func (j *Joiner[JT]) Tables() JoinTables {
 	return j.joinTables
 }
 
 func (j *Joiner[JT]) SQLs() joinerSQLs {
-	return j.joinerSQLs
+	return j.sql
 }
 
-func (j *Joiner[JT]) makeRefs(in *JT) []any {
+func (jb JoinerBase) AllFields() struct_info.TableFields { return jb.allFields }
+func (jb JoinerBase) OneSQL() string                     { return jb.sql.GetOneSQL }
+func (jb JoinerBase) ManySQL() string                    { return jb.sql.GetManySQL }
+func (jb JoinerBase) SortSQL() string                    { return jb.sql.SortSQL }
+
+func (jts JoinTables) MakeRefs(in any) []any {
 	result := make([]any, 0)
 	elem := reflect.ValueOf(in).Elem()
-	for _, table := range j.joinTables {
-		if table.isPointer {
-			refs := make([]any, len(table.tableInfo.SelectIdxList))
+	for _, table := range jts {
+		if table.IsPointer {
+			refs := make([]any, len(table.TableInfo.SelectIdxList))
 			for i := range refs {
 				result = append(result, &refs[i])
 			}
 			continue
 		}
-		tableRef := elem.FieldByIndex(table.index).Addr().Interface()
-		refs := table.tableInfo.Fields.ExtractRefs(tableRef, table.tableInfo.SelectIdxList)
+		tableRef := elem.FieldByIndex(table.Index).Addr().Interface()
+		refs := table.TableInfo.Fields.ExtractRefs(tableRef, table.TableInfo.SelectIdxList)
 		result = append(result, refs...)
 	}
 	return result
 }
 
-func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
+func (jts JoinTables) ApplyRefs(in any, refs []any) {
 	pos := 0
 	elem := reflect.ValueOf(in).Elem()
-	for _, table := range j.joinTables {
-		if !table.isPointer {
-			pos += len(table.tableInfo.SelectIdxList)
+	for _, table := range jts {
+		if !table.IsPointer {
+			pos += len(table.TableInfo.SelectIdxList)
 			continue
 		}
+
 		filled := false
 		checkFrom := pos
-		for range table.tableInfo.SelectIdxList {
+		tField := elem.FieldByIndex(table.Index)
+		for range table.TableInfo.SelectIdxList {
 			p, _ := refs[checkFrom].(*any)
 			if *p != nil {
 				filled = true
@@ -74,21 +90,22 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 			checkFrom++
 		}
 		if !filled {
-			pos += len(table.tableInfo.SelectIdxList)
+			pos += len(table.TableInfo.SelectIdxList)
+			// Сброс pointer-поля в nil перед проверкой, чтобы избежать
+			// утечки данных когда связанная таблица возвращает NULL
+			tField.SetZero()
 			continue
 		}
-		tField := elem.FieldByIndex(table.index)
 		tField.Set(reflect.New(tField.Type().Elem()))
 		tField = tField.Elem()
-		for _, fIdx := range table.tableInfo.SelectIdxList {
+		for _, fIdx := range table.TableInfo.SelectIdxList {
 			p, _ := refs[pos].(*any)
 			pos++
 			val := *p
 			if val == nil {
 				continue
 			}
-			fieldVal := tField.FieldByIndex(table.tableInfo.Fields[fIdx].Index)
-			//fieldVal.Set(reflect.ValueOf(val))
+			fieldVal := tField.FieldByIndex(table.TableInfo.Fields[fIdx].Index)
 			rv := reflect.ValueOf(val)
 			if rv.Type().AssignableTo(fieldVal.Type()) {
 				fieldVal.Set(rv)
@@ -103,9 +120,66 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 
 func (j *Joiner[JT]) One(ctx context.Context, tx TxProcessor, keys ...any) (*JT, error) {
 	result := new(JT)
-	refs := j.makeRefs(result)
-	err := tx.QueryRowContext(ctx, j.GetOneSQL, keys...).Scan(refs...)
-	j.applyRefs(result, refs)
+	refs := j.joinTables.MakeRefs(result)
+	err := tx.QueryRowContext(ctx, j.sql.GetOneSQL, keys...).Scan(refs...)
+	j.joinTables.ApplyRefs(result, refs)
+	return result, err
+}
+
+func MakeQuery4Many(j JoinerBase, filter *Filter) (query string, args []any, err error) {
+	var sb strings.Builder
+	sb.WriteString(j.sql.GetManySQL)
+	if filter != nil {
+		if filter.Range != nil {
+			var (
+				argCnt int
+				where  string
+			)
+			if where, args, err = filter.Range.Build(j.allFields, j.dialect, &argCnt); err != nil {
+				return "", nil, err
+			}
+			sb.WriteString(defs.SQLWhere)
+			sb.WriteString(where)
+		}
+	}
+	sb.WriteString(j.sql.SortSQL)
+	if filter != nil {
+		sb.WriteString(j.dialect.OffsetAndLimit(filter.Offset, filter.Limit))
+	}
+
+	return sb.String(), args, nil
+}
+
+func (j *Joiner[JT]) Many(ctx context.Context, tx TxProcessor, filter *Filter) (result []*JT, err error) {
+	query, args, err := MakeQuery4Many(j.JoinerBase, filter)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		err = errors.Join(err, rows.Close())
+	}()
+
+	buf := new(JT)
+	refs := j.joinTables.MakeRefs(buf)
+	for rows.Next() {
+		if err = rows.Scan(refs...); err != nil {
+			return nil, err
+		}
+		j.joinTables.ApplyRefs(buf, refs)
+		rec := new(JT)
+		*rec = *buf
+		result = append(result, rec)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return result, err
 }
 
@@ -122,6 +196,16 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 	if err != nil {
 		return Joiner[JT]{}, err
 	}
+	jBase, err := MakeJoinerBase(joinTables, d)
+	if err != nil {
+		return Joiner[JT]{}, err
+	}
+	return Joiner[JT]{
+		JoinerBase: jBase,
+	}, nil
+}
+
+func MakeJoinerBase(joinTables JoinTables, d dialect.SQLDialect) (JoinerBase, error) {
 	var aliasCnt int
 	aliasPosMap := make(map[string]int)
 	aliasNameMap := make(map[string]string) // table alias -> real table name
@@ -129,69 +213,90 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 	pkTables := make([]int, 1)
 	fromIdx := 0
 	totalFltCnt := 0
-	sortPriotityIdx := make([]int, 0, 1)
-	for idx, tInfo := range joinTables {
-		if tInfo.isFrom {
+	sortPriorityIdx := make([]int, 0, 1)
+	realTableAliases := make([]string, len(joinTables))
+	for idx := range joinTables {
+		tInfo := &joinTables[idx]
+		if tInfo.IsFrom {
 			if fromIdx != 0 {
-				return Joiner[JT]{}, fmt.Errorf("joiner can't use `from` more then once for tables %d and %d",
+				return JoinerBase{}, fmt.Errorf("joiner can't use `from` more then once for tables %d and %d",
 					fromIdx, idx)
 			}
 			fromIdx = idx
-		} else if tInfo.isPK && !slices.Contains(pkTables, idx) {
+		} else if tInfo.IsPK && !slices.Contains(pkTables, idx) {
 			pkTables = append(pkTables, idx) //nolint:makezero
 		}
 
-		if tInfo.alias == "" {
+		realAlias := tInfo.Alias
+		if realAlias == "" {
 			for {
 				aliasCnt++
-				tInfo.alias = fmt.Sprintf("T%d", aliasCnt)
-				if _, ok := aliasPosMap[tInfo.alias]; !ok {
+				realAlias = fmt.Sprintf("T%d", aliasCnt)
+				if _, ok := aliasPosMap[realAlias]; !ok {
 					break
 				}
 			}
+		} else if aliasIdx, ok := aliasPosMap[realAlias]; ok {
+			return JoinerBase{}, fmt.Errorf("joiner can't use `alias` more then once for tables %d and %d", aliasIdx, idx)
 		}
-		if aliasIdx, ok := aliasPosMap[tInfo.alias]; ok {
-			return Joiner[JT]{}, fmt.Errorf("joiner can't use `alias` more then once for tables %d and %d", aliasIdx, idx)
-		}
-		aliasNameMap[tInfo.alias] = tInfo.tableInfo.SQLName
-		realNameAliases[tInfo.tableInfo.SQLName] = tInfo.alias
-		totalFltCnt += len(tInfo.tableInfo.SelectIdxList)
+		realTableAliases[idx] = realAlias
+		aliasNameMap[realAlias] = tInfo.TableInfo.SQLName
+		realNameAliases[tInfo.TableInfo.SQLName] = realAlias
+		totalFltCnt += len(tInfo.TableInfo.SelectIdxList)
 
-		if tInfo.sortPriority != 0 {
-			sortPriotityIdx = append(sortPriotityIdx, idx)
+		if tInfo.SortPriority != 0 {
+			sortPriorityIdx = append(sortPriorityIdx, idx)
 		}
 	}
-	if len(sortPriotityIdx) == 0 {
-		sortPriotityIdx = append(sortPriotityIdx, fromIdx)
+	if len(sortPriorityIdx) == 0 {
+		sortPriorityIdx = append(sortPriorityIdx, fromIdx)
 	} else {
-		slices.SortStableFunc(sortPriotityIdx, func(a, b int) int {
-			return joinTables[a].sortPriority - joinTables[b].sortPriority
+		slices.SortStableFunc(sortPriorityIdx, func(a, b int) int {
+			return joinTables[a].SortPriority - joinTables[b].SortPriority
 		})
 	}
 
 	// Query build
+	pos := 0
+	var allFields struct_info.TableFields
+	fldPosMap := make(map[string]int)
 	var selSb strings.Builder
 	selSb.Grow(totalFltCnt * 25)
-	pos := 0
 	selSb.WriteString(defs.SQLSelect)
-	for _, tInfo := range joinTables {
-		for _, fIdx := range tInfo.tableInfo.SelectIdxList {
+	for idx, tInfo := range joinTables {
+		for _, fIdx := range tInfo.TableInfo.SelectIdxList {
+			fldAlias := realTableAliases[idx] + defs.SQLDot + tInfo.TableInfo.Fields[fIdx].SQLName
+			if _, ok := fldPosMap[fldAlias]; ok {
+				return JoinerBase{}, fmt.Errorf("duplicate full field name `%s`", fldAlias)
+			}
+			fldPosMap[fldAlias] = pos
+			allFields = append(allFields, struct_info.TableField{
+				Index:        nil,
+				Path:         nil,
+				SQLName:      fldAlias,
+				RefTable:     "",
+				RefField:     "",
+				SortPos:      0,
+				IsPK:         false,
+				CanSelect:    false,
+				CanInsert:    false,
+				CanUpdate:    false,
+				SortBackward: false,
+			})
 			if pos > 0 {
 				selSb.WriteString(defs.SQLCommaSpace)
 			}
 			pos++
-			selSb.WriteString(tInfo.alias)
-			selSb.WriteString(defs.SQLDot)
-			selSb.WriteString(tInfo.tableInfo.Fields[fIdx].SQLName)
+			selSb.WriteString(fldAlias)
 		}
 	}
 
 	selSb.WriteString(defs.SQLFrom)
-	selSb.WriteString(joinTables[fromIdx].tableInfo.SQLName)
+	selSb.WriteString(joinTables[fromIdx].TableInfo.SQLName)
 	selSb.WriteString(defs.SQLAs)
-	selSb.WriteString(joinTables[fromIdx].alias)
+	selSb.WriteString(realTableAliases[fromIdx])
 	defaultJoin := InnerJoin
-	if joinTables[fromIdx].isPointer {
+	if joinTables[fromIdx].IsPointer {
 		defaultJoin = OuterJoin
 	}
 	for idx, tInfo := range joinTables {
@@ -199,55 +304,56 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 			continue
 		}
 
-		joinMode := tInfo.joinMode
+		joinMode := tInfo.JoinModeVal
 		if joinMode == DefaultJoin {
 			joinMode = defaultJoin
 		}
 		selSb.WriteString("\n")
 		selSb.WriteString(joinMode.SQLName())
 		selSb.WriteString(defs.SQLSpace)
-		selSb.WriteString(tInfo.tableInfo.SQLName)
+		selSb.WriteString(tInfo.TableInfo.SQLName)
 		selSb.WriteString(defs.SQLAs)
-		selSb.WriteString(tInfo.alias)
+		selSb.WriteString(realTableAliases[idx])
 		selSb.WriteString(defs.SQLOn)
-		if len(tInfo.tableInfo.RefIdxList) == 0 {
+		if len(tInfo.TableInfo.RefIdxList) == 0 {
 			selSb.WriteString(defs.SQLTrue)
 		}
-		for rPos, rIdx := range tInfo.tableInfo.RefIdxList {
+		for rPos, rIdx := range tInfo.TableInfo.RefIdxList {
 			if rPos > 0 {
 				selSb.WriteString(defs.SQLAnd)
 			}
-			selSb.WriteString(joinTables[idx].alias)
+			selSb.WriteString(realTableAliases[idx])
 			selSb.WriteString(defs.SQLDot)
-			selSb.WriteString(tInfo.tableInfo.Fields[rIdx].SQLName)
+			selSb.WriteString(tInfo.TableInfo.Fields[rIdx].SQLName)
 			selSb.WriteString(defs.SQLEquals)
-			refTable := tInfo.tableInfo.Fields[rIdx].RefTable
-			if refAlias, exists := tInfo.refAliasMap[refTable]; exists {
+			refTable := tInfo.TableInfo.Fields[rIdx].RefTable
+			if refAlias, exists := tInfo.RefAliasMap[refTable]; exists {
 				refTable = refAlias
 			} else {
 				refTable = realNameAliases[refTable]
 			}
 			selSb.WriteString(refTable)
 			selSb.WriteString(defs.SQLDot)
-			selSb.WriteString(tInfo.tableInfo.Fields[rIdx].RefField)
+			selSb.WriteString(tInfo.TableInfo.Fields[rIdx].RefField)
 		}
 	}
-	selSb.WriteString(defs.SQLWhere)
 	getManySQL := selSb.String()
+
+	selSb.WriteString(defs.SQLWhere)
 
 	pkTables[0] = fromIdx
 	phNum := 0
 	for _, pkIdx := range pkTables {
 		pkTable := joinTables[pkIdx]
-		for _, fldIdx := range pkTable.tableInfo.PKIdxList {
+		for _, fldIdx := range pkTable.TableInfo.PKIdxList {
 			if phNum > 0 {
 				selSb.WriteString(defs.SQLAnd)
 			}
-			selSb.WriteString(joinTables[pkIdx].alias)
+			selSb.WriteString(realTableAliases[pkIdx])
 			selSb.WriteString(defs.SQLDot)
-			selSb.WriteString(pkTable.tableInfo.Fields[fldIdx].SQLName)
+			selSb.WriteString(pkTable.TableInfo.Fields[fldIdx].SQLName)
 			selSb.WriteString(defs.SQLEquals)
-			selSb.WriteString(d.Placeholder(phNum))
+			selSb.WriteString(d.Placeholder(phNum + 1))
 			phNum++
 		}
 	}
@@ -256,14 +362,14 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 	var sbSort strings.Builder
 	sbSort.WriteString(defs.SQLOrderBy)
 	sortCnt := 0
-	for _, tblIdx := range sortPriotityIdx {
+	for _, tblIdx := range sortPriorityIdx {
 		sortTbl := joinTables[tblIdx]
-		for _, fldIdx := range sortTbl.tableInfo.SortIdxList {
+		for _, fldIdx := range sortTbl.TableInfo.SortIdxList {
 			if sortCnt > 0 {
 				sbSort.WriteString(defs.SQLCommaSpace)
 			}
-			fld := sortTbl.tableInfo.Fields[fldIdx]
-			sbSort.WriteString(sortTbl.alias)
+			fld := sortTbl.TableInfo.Fields[fldIdx]
+			sbSort.WriteString(realTableAliases[tblIdx])
 			sbSort.WriteString(defs.SQLDot)
 			sbSort.WriteString(fld.SQLName)
 			if fld.SortBackward {
@@ -276,10 +382,12 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 	if sortCnt > 0 {
 		sortSQL = sbSort.String()
 	}
-	return Joiner[JT]{
-		tsType:     nil,
+	return JoinerBase{
+		dialect:    d,
 		joinTables: joinTables,
-		joinerSQLs: joinerSQLs{
+		allFields:  allFields,
+		fldPosMap:  fldPosMap,
+		sql: joinerSQLs{
 			GetManySQL: getManySQL,
 			GetOneSQL:  selSb.String(),
 			SortSQL:    sortSQL,
@@ -334,41 +442,48 @@ func (j JoinMode) SQLName() string {
 }
 
 type JoinTable struct {
-	tableInfo    *struct_info.TableInfo
-	tableType    reflect.Type
-	index        []int
-	isPointer    bool
-	isPK         bool
-	isFrom       bool
-	sortPriority int
-	joinMode     JoinMode
-	refAliasMap  map[string]string
-	alias        string
+	TableInfo    *struct_info.TableInfo
+	TableType    reflect.Type
+	Index        []int
+	IsPointer    bool
+	IsPK         bool
+	IsFrom       bool
+	SortPriority int
+	JoinModeVal  JoinMode
+	RefAliasMap  map[string]string
+	Alias        string
 }
 
-func collectJoinTables(t reflect.Type) (result []*JoinTable, err error) {
+var knownJoinTables sync.Map
+
+func collectJoinTables(t reflect.Type) (result JoinTables, err error) {
 	if t.Kind() != reflect.Struct {
 		return nil, errors.New("expects a struct's type argument for joining")
 	}
-	result = make([]*JoinTable, 0, t.NumField())
+
+	if v, ok := knownJoinTables.Load(t); ok {
+		return v.(JoinTables), nil //nolint:errcheck
+	}
+
+	result = make([]JoinTable, 0, t.NumField())
 	for idx := range t.NumField() {
 		if !t.Field(idx).IsExported() {
 			continue
 		}
 		if t.Field(idx).Anonymous {
-			var subRes []*JoinTable
+			var subRes JoinTables
 			if subRes, err = collectJoinTables(t.Field(idx).Type); err != nil {
 				return nil, err
 			}
-			for subPos := range subRes {
-				subRes[subPos].index = append(t.Field(idx).Index, subRes[subPos].index...)
+			for _, sub := range subRes {
+				sub.Index = append(t.Field(idx).Index, sub.Index...)
+				result = append(result, sub)
 			}
-			result = append(result, subRes...)
 
 			continue
 		}
 
-		joinTableFlags, processable := parseJoinTableFlags(t.Field(idx).Tag.Get(struct_info.TagName))
+		joinTableFlags, processable := ParseJoinTableFlags(t.Field(idx).Tag.Get(struct_info.TagName))
 		if !processable {
 			continue
 		}
@@ -413,21 +528,23 @@ func collectJoinTables(t reflect.Type) (result []*JoinTable, err error) {
 			return nil, err
 		}
 
-		joinTable := &JoinTable{
-			tableInfo:    tableInfo,
-			tableType:    tableType,
-			isPointer:    isPtr,
-			isPK:         joinTableFlags.IsPK,
-			isFrom:       joinTableFlags.IsFrom,
-			sortPriority: sortPriority,
-			joinMode:     joinMode,
-			refAliasMap:  aliasMap,
-			index:        []int{idx},
-			alias:        joinTableFlags.Alias,
+		joinTable := JoinTable{
+			TableInfo:    tableInfo,
+			TableType:    tableType,
+			IsPointer:    isPtr,
+			IsPK:         joinTableFlags.IsPK,
+			IsFrom:       joinTableFlags.IsFrom,
+			SortPriority: sortPriority,
+			JoinModeVal:  joinMode,
+			RefAliasMap:  aliasMap,
+			Index:        []int{idx},
+			Alias:        joinTableFlags.Alias,
 		}
 
 		result = append(result, joinTable)
 	}
+
+	knownJoinTables.Store(t, result)
 
 	return result, nil
 }

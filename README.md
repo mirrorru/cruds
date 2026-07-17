@@ -8,7 +8,7 @@
 
 - **CRUD-операции**: вставка, обновление, выборка по PK, удаление, выборка с фильтром
 - **Поддержка БД**: PostgreSQL, SQLite (обе с поддержкой RETURNING)
-- **Система тегов**: настройка поведения полей через struct tag `tbl`
+- **Система тегов**: настройка поведения полей через struct tag `crud`
 - **Фильтры**: дерево условий с операторами (AND, OR, NOT, =, <>, >, >=, <, <=, LIKE, ILIKE, IN, IS NULL, IS NOT NULL)
 - **Пагинация**: OFFSET / LIMIT
 - **Адаптеры**: для `pgx` и `database/sql`
@@ -31,8 +31,8 @@ import (
 )
 
 type UserRow struct {
-    ID   int64  `tbl:"pk,auto"`
-    Name string `tbl:"col=name"`
+    ID   int64  `crud:"pk,auto"`
+    Name string `crud:"col=name"`
 }
 
 func main() {
@@ -62,7 +62,7 @@ func main() {
 - `qc.PostgresSQL` — PostgreSQL диалект
 - `qc.SQLite` — SQLite диалект
 
-## Теги struct полей (`tbl:"..."`)
+## Теги struct полей (`crud:"..."`)
 
 | Тег | Описание |
 |-----|----------|
