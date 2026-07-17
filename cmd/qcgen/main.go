@@ -1,3 +1,4 @@
+//nolint:all
 package main
 
 import (
@@ -9,11 +10,13 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"quick-crud/helpers"
 	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/mirrorru/cruds/helpers"
+	"github.com/mirrorru/cruds/struct_info"
 )
 
 type srcSpec struct {
@@ -61,52 +64,33 @@ func (f *fieldTagFlags) canSelect() bool {
 }
 
 func parseFieldTag(tag string) (result fieldTagFlags, ok bool) {
-	const (
-		tagName       = "tbl"
-		keyPK         = "pk"
-		keyRO         = "ro"
-		keyAuto       = "auto"
-		keyEmbed      = "embed"
-		keyOmit       = "omit"
-		keyColName    = "col="
-		keyInsert     = "ins"
-		keyUpdate     = "upd"
-		keyHide       = "rskip"
-		keyPrefix     = "prefix="
-		keyRef        = "ref="
-		keySort       = "sort="
-		keyDesc       = "desc"
-		keySeparator  = ";"
-		inKVSeparator = ":"
-	)
-
-	keys := strings.Split(tag, keySeparator)
+	keys := strings.Split(tag, struct_info.KeysSeparator)
 	for _, key := range keys {
 		switch {
-		case key == keyPK:
+		case key == struct_info.KeyPK:
 			result.IsPK = true
-		case key == keyRO:
+		case key == struct_info.KeyRO:
 			result.ReadOnly = true
-		case key == keyAuto:
+		case key == struct_info.KeyAuto:
 			result.AutoGen = true
-		case key == keyEmbed:
+		case key == struct_info.KeyEmbed:
 			result.Embed = true
-		case strings.HasPrefix(key, keyOmit):
+		case strings.HasPrefix(key, struct_info.KeyOmit):
 			return result, false
-		case key == keyInsert:
+		case key == struct_info.KeyInsert:
 			result.ForceInsert = true
-		case key == keyUpdate:
+		case key == struct_info.KeyUpdate:
 			result.ForceUpdate = true
-		case key == keyHide:
+		case key == struct_info.KeyHide:
 			result.SkipReading = true
-		case strings.HasPrefix(key, keyColName):
-			result.ColName = key[len(keyColName):]
-		case strings.HasPrefix(key, keyPrefix):
-			result.Prefix = key[len(keyPrefix):]
-		case strings.HasPrefix(key, keyRef):
-			result.Ref = key[len(keyRef):]
-		case strings.HasPrefix(key, keySort):
-			result.Sort = key[len(keySort):]
+		case strings.HasPrefix(key, struct_info.KeyColName):
+			result.ColName = key[len(struct_info.KeyColName):]
+		case strings.HasPrefix(key, struct_info.KeyPrefix):
+			result.Prefix = key[len(struct_info.KeyPrefix):]
+		case strings.HasPrefix(key, struct_info.KeyRef):
+			result.Ref = key[len(struct_info.KeyRef):]
+		case strings.HasPrefix(key, struct_info.KeySort):
+			result.Sort = key[len(struct_info.KeySort):]
 		}
 	}
 	return result, true
@@ -719,11 +703,11 @@ import (
 	"errors"
 	"strings"
 
-	"quick-crud/contracts"
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/struct_info"
+	"github.com/mirrorru/cruds/contracts"
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/filter"
+	"github.com/mirrorru/cruds/struct_info"
 
 	"{{.TypeInfo.PkgPath}}"
 )
@@ -814,16 +798,16 @@ func (t *Table{{.TypeInfo.Name}}) Upd(ctx context.Context, tx contracts.TxProces
 	return buf, nil, err
 }
 
-func (t *Table{{.TypeInfo.Name}}) One(ctx context.Context, tx contracts.TxProcessor, keys ...any) (*{{.TypeInfo.PkgName}}.{{.TypeInfo.Name}}, error) {
+func (t *Table{{.TypeInfo.Name}}) One(ctx context.Context, tx contracts.TxProcessor, struct_info.Keys ...any) (*{{.TypeInfo.PkgName}}.{{.TypeInfo.Name}}, error) {
 	buf := new({{.TypeInfo.PkgName}}.{{.TypeInfo.Name}})
 	refs := t.scanRefs(buf)
-	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
+	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, struct_info.Keys...).Scan(refs...)
 
 	return buf, err
 }
 
-func (t *Table{{.TypeInfo.Name}}) Del(ctx context.Context, tx contracts.TxProcessor, keys ...any) (contracts.Result, error) {
-	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
+func (t *Table{{.TypeInfo.Name}}) Del(ctx context.Context, tx contracts.TxProcessor, struct_info.Keys ...any) (contracts.Result, error) {
+	return tx.ExecContext(ctx, t.sqlTexts.Delete, struct_info.Keys...)
 }
 
 func (t *Table{{.TypeInfo.Name}}) Many(ctx context.Context, tx contracts.TxProcessor, filter *filter.Filter) (result []*{{.TypeInfo.PkgName}}.{{.TypeInfo.Name}}, err error) {

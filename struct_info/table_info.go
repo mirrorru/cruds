@@ -2,8 +2,10 @@ package struct_info
 
 import (
 	"fmt"
-	"quick-crud/helpers"
 	"reflect"
+	"slices"
+
+	"github.com/mirrorru/cruds/helpers"
 )
 
 type TableInfo struct {
@@ -22,12 +24,12 @@ type SQLNamer interface {
 	SQLName() string
 }
 
-func GetTableInfo(t reflect.Type) (TableInfo, error) {
+func GetTableInfo(t reflect.Type) (*TableInfo, error) {
 	fields, err := CollectTableFields(t)
 	if err != nil {
-		return TableInfo{}, err
+		return nil, err
 	}
-	result := TableInfo{
+	result := &TableInfo{
 		SQLName:       getTableName(t),
 		Fields:        fields,
 		FieldNameIdx:  make(map[string]int, len(fields)),
@@ -38,7 +40,7 @@ func GetTableInfo(t reflect.Type) (TableInfo, error) {
 	}
 	for idx, field := range fields {
 		if prevIdx, ok := result.FieldNameIdx[field.SQLName]; ok {
-			return TableInfo{}, fmt.Errorf("field `%s` is duplicated with indexes %d and %d ", field.SQLName, prevIdx, idx)
+			return nil, fmt.Errorf("field `%s` is duplicated with indexes %d and %d ", field.SQLName, prevIdx, idx)
 		}
 		result.FieldNameIdx[field.SQLName] = idx
 		if field.IsPK {
@@ -60,6 +62,11 @@ func GetTableInfo(t reflect.Type) (TableInfo, error) {
 			result.RefIdxList = append(result.RefIdxList, idx)
 		}
 	}
+
+	// sort result.SortIdxList
+	slices.SortStableFunc(result.SortIdxList, func(a, b int) int {
+		return fields[a].SortPos - fields[b].SortPos
+	})
 
 	return result, nil
 }

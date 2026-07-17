@@ -1,6 +1,6 @@
-package quick_crud
+package cruds
 
-import "quick-crud/dialect"
+import "github.com/mirrorru/cruds/dialect"
 
 var (
 	// SQLite алиас для реализации диалекта SQLite

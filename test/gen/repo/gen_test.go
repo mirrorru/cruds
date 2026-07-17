@@ -5,15 +5,15 @@ package repo
 import (
 	"context"
 	"database/sql"
-	"quick-crud"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/test/gen/model"
-	"quick-crud/tx_adapter"
 	"sync"
 	"testing"
 
-	"github.com/gojuno/minimock/v3"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/test/gen/model"
+	"github.com/mirrorru/cruds/tx_adapter"
+
+	qc "github.com/mirrorru/cruds"
+
 	"github.com/mirrorru/dot"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,18 +76,18 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 }
 
-func (e *testEnv) TxProcessor() quick_crud.TxProcessor {
+func (e *testEnv) TxProcessor() qc.TxProcessor {
 	return tx_adapter.NewDBAdapterVal(e.db)
 }
 
 func TestTableUserRow_Interface(t *testing.T) {
 	t.Parallel()
-	var _ quick_crud.TypedTable[model.UserRow] = (*TableUserRow)(nil)
+	var _ qc.TypedTable[model.UserRow] = (*TableUserRow)(nil)
 }
 
 func TestTableProductRow_Interface(t *testing.T) {
 	t.Parallel()
-	var _ quick_crud.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
+	var _ qc.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
 }
 
 func TestTableUserRow_Internals(t *testing.T) {
@@ -152,17 +152,17 @@ func TestTableUserRow_Many(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)
 
-	rows, err = table.Many(env.ctx, tx, &filter.Filter{
+	rows, err = table.Many(env.ctx, tx, &qc.Filter{
 		Offset: 1,
 		Limit:  2,
 	})
 	require.NoError(t, err)
 	assert.Len(t, rows, 2)
 
-	rows, err = table.Many(env.ctx, tx, &filter.Filter{
-		Range: filter.ConditionNode{
+	rows, err = table.Many(env.ctx, tx, &qc.Filter{
+		Range: qc.ConditionNode{
 			FieldIdx: 0,
-			Op:       filter.CmdEq,
+			Op:       qc.CmdEq,
 			Value:    2,
 		},
 	})
@@ -181,10 +181,10 @@ func TestTableProductRow_Many(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)
 
-	rows, err = table.Many(env.ctx, tx, &filter.Filter{
-		Range: filter.ConditionNode{
+	rows, err = table.Many(env.ctx, tx, &qc.Filter{
+		Range: qc.ConditionNode{
 			FieldIdx: 2,
-			Op:       filter.CmdGt,
+			Op:       qc.CmdGt,
 			Value:    25.0,
 		},
 	})

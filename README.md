@@ -1,4 +1,4 @@
-# Quick CRUD
+# CRUDs
 
 Библиотека для упрощения CRUD-операций со структурами на Go с использованием дженериков.
 
@@ -17,7 +17,7 @@
 ## Установка
 
 ```bash
-go get github.com/mirrorru/quick-crud
+go get github.com/mirrorru/cruds
 ```
 
 ## Быстрый старт
@@ -27,7 +27,7 @@ package main
 
 import (
     "context"
-    qc "quick-crud"
+    qc "github.com/mirrorru/cruds"
 )
 
 type UserRow struct {

@@ -1,10 +1,11 @@
 package struct_info_test
 
 import (
-	"quick-crud/struct_info"
-	"quick-crud/test/samples"
 	"reflect"
 	"testing"
+
+	"github.com/mirrorru/cruds/struct_info"
+	"github.com/mirrorru/cruds/test/samples"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -79,7 +80,7 @@ func TestGetTableInfo(t *testing.T) {
 		t.Run(tt.reflectType.Name(), func(t *testing.T) {
 			got, err := struct_info.GetTableInfo(tt.reflectType)
 			assert.NoError(t, err, tt.reflectType.Name())
-			assert.Equal(t, tt.expected, got, tt.reflectType.Name())
+			assert.Equal(t, &tt.expected, got, tt.reflectType.Name())
 		})
 	}
 }

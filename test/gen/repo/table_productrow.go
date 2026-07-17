@@ -6,18 +6,18 @@ package repo
 import (
 	"context"
 	"errors"
-	"quick-crud"
 	"strings"
 
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/struct_info"
+	qc "github.com/mirrorru/cruds"
 
-	"quick-crud/test/gen/model"
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/struct_info"
+
+	"github.com/mirrorru/cruds/test/gen/model"
 )
 
-var _ quick_crud.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
+var _ qc.TypedTable[model.ProductRow] = (*TableProductRow)(nil)
 
 type TableProductRow struct {
 	dialect   dialect.SQLDialect
@@ -34,18 +34,18 @@ func NewTableProductRowVal(d dialect.SQLDialect) TableProductRow {
 	tableInfo := struct_info.TableInfo{
 		SQLName: "products",
 		Fields: struct_info.TableFields{
-			{Path: []string{"ID" }, SQLName: "id", IsPK: true, CanSelect: true},
-			{Path: []string{"Name" }, SQLName: "name", CanSelect: true, CanInsert: true, CanUpdate: true, SortPos: 1},
-			{Path: []string{"Price" }, SQLName: "price", CanSelect: true, CanInsert: true, CanUpdate: true},
-			{Path: []string{"Stock" }, SQLName: "stock", CanSelect: true, CanInsert: true, CanUpdate: true},
+			{Path: []string{"ID"}, SQLName: "id", IsPK: true, CanSelect: true},
+			{Path: []string{"Name"}, SQLName: "name", CanSelect: true, CanInsert: true, CanUpdate: true, SortPos: 1},
+			{Path: []string{"Price"}, SQLName: "price", CanSelect: true, CanInsert: true, CanUpdate: true},
+			{Path: []string{"Stock"}, SQLName: "stock", CanSelect: true, CanInsert: true, CanUpdate: true},
 		},
-		FieldNameIdx:  map[string]int{"id": 0, "name": 1, "price": 2, "stock": 3 },
-		PKIdxList:     []int{0 },
-		InsertIdxList: []int{1, 2, 3 },
-		UpdateIdxList: []int{1, 2, 3 },
-		SelectIdxList: []int{0, 1, 2, 3 },
-		SortIdxList:   []int{1 },
-		RefIdxList:    []int{ },
+		FieldNameIdx:  map[string]int{"id": 0, "name": 1, "price": 2, "stock": 3},
+		PKIdxList:     []int{0},
+		InsertIdxList: []int{1, 2, 3},
+		UpdateIdxList: []int{1, 2, 3},
+		SelectIdxList: []int{0, 1, 2, 3},
+		SortIdxList:   []int{1},
+		RefIdxList:    []int{},
 	}
 
 	return TableProductRow{
@@ -67,18 +67,18 @@ func (t *TableProductRow) Internals() tableProductRowInternals {
 }
 
 func (t *TableProductRow) scanRefs(buf *model.ProductRow) []any {
-	return []any{&buf.ID, &buf.Name, &buf.Price, &buf.Stock }
+	return []any{&buf.ID, &buf.Name, &buf.Price, &buf.Stock}
 }
 
 func (t *TableProductRow) insertArgs(row *model.ProductRow) []any {
-	return []any{row.Name, row.Price, row.Stock }
+	return []any{row.Name, row.Price, row.Stock}
 }
 
 func (t *TableProductRow) updateArgs(row *model.ProductRow) []any {
-	return []any{row.Name, row.Price, row.Stock, row.ID }
+	return []any{row.Name, row.Price, row.Stock, row.ID}
 }
 
-func (t *TableProductRow) Ins(ctx context.Context, tx quick_crud.TxProcessor, row *model.ProductRow) (*model.ProductRow, quick_crud.Result, error) {
+func (t *TableProductRow) Ins(ctx context.Context, tx qc.TxProcessor, row *model.ProductRow) (*model.ProductRow, qc.Result, error) {
 	args := t.insertArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
@@ -91,7 +91,7 @@ func (t *TableProductRow) Ins(ctx context.Context, tx quick_crud.TxProcessor, ro
 	return buf, nil, err
 }
 
-func (t *TableProductRow) Upd(ctx context.Context, tx quick_crud.TxProcessor, row *model.ProductRow) (*model.ProductRow, quick_crud.Result, error) {
+func (t *TableProductRow) Upd(ctx context.Context, tx qc.TxProcessor, row *model.ProductRow) (*model.ProductRow, qc.Result, error) {
 	args := t.updateArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
@@ -104,7 +104,7 @@ func (t *TableProductRow) Upd(ctx context.Context, tx quick_crud.TxProcessor, ro
 	return buf, nil, err
 }
 
-func (t *TableProductRow) One(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (*model.ProductRow, error) {
+func (t *TableProductRow) One(ctx context.Context, tx qc.TxProcessor, keys ...any) (*model.ProductRow, error) {
 	buf := new(model.ProductRow)
 	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
@@ -112,11 +112,11 @@ func (t *TableProductRow) One(ctx context.Context, tx quick_crud.TxProcessor, ke
 	return buf, err
 }
 
-func (t *TableProductRow) Del(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (quick_crud.Result, error) {
+func (t *TableProductRow) Del(ctx context.Context, tx qc.TxProcessor, keys ...any) (qc.Result, error) {
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *TableProductRow) Many(ctx context.Context, tx quick_crud.TxProcessor, filter *filter.Filter) (result []*model.ProductRow, err error) {
+func (t *TableProductRow) Many(ctx context.Context, tx qc.TxProcessor, filter *qc.Filter) (result []*model.ProductRow, err error) {
 	var (
 		query strings.Builder
 		args  []any

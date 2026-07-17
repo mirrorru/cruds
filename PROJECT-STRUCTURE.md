@@ -1,9 +1,11 @@
-# Структура проекта Quick CRUD
+# Структура проекта CRUDs
 
 ## Обзор файловой структуры
 
-### Корневой пакет (quick-crud)
+### Корневой пакет (cruds)
 - `table.go` — универсальная реализация `Table[ROW]` с использованием reflection
+- `filter.go` — дерево условий фильтрации (ConditionNode, GroupNode, FilterNode)
+- `filter_test.go` — тесты системы фильтрации
 - `contracts.go` — интерфейсы и контракты (`TypedTable[ROW]`, `TxProcessor`, `Row`, `Result`, `Rows`)
 - `dialect_vars.go` — пакетные переменные-алиасы для SQL-диалектов (`SQLite`, `PostgresSQL`), предоставляющие удобный доступ к реализациям диалектов без импорта пакета `dialect`
 
@@ -27,22 +29,17 @@ qcgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 
 ### dialect
 SQL диалекты:
+- `dialects.go` — общий интерфейс диалекта и вспомогательные функции
 - `postgres.go` — PostgreSQL диалект
 - `sqlite.go` — SQLite диалект
-
-### filter
-Система фильтрации:
-- `filter.go` — дерево условий (ConditionNode, GroupNode, FilterNode)
-
-### helpers
-Вспомогательные функции:
-- `casing.go` — преобразование CamelCase в snake_case
+- `dialect_test.go` — тесты диалектов
 
 ### struct_info
 Метаданные таблиц и полей:
 - `field_tags.go` — парсинг тегов `tbl`
 - `table_field.go` — `TableField`, `TableFields`, `ExtractArgs`, `ExtractRefs`
 - `table_info.go` — `TableInfo`, `GetTableInfo`
+- `table_info_test.go` — тесты
 - `table_sql_texts.go` — построение SQL текстов
 
 ### tx_adapter
@@ -54,6 +51,7 @@ SQL диалекты:
 Тестовые файлы:
 - `gen/model/models.go` — тестовые модели (UserRow, ProductRow)
 - `gen/repo/` — сгенерированные реализации таблиц
+- `gensrc/` — исходные файлы для генерации
 - `smoke/` — smoke тесты
 - `samples/` — примеры структур
 

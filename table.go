@@ -1,21 +1,21 @@
-package quick_crud
+package cruds
 
 import (
 	"context"
 	"errors"
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/struct_info"
 	"reflect"
 	"strings"
+
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/struct_info"
 
 	"github.com/mirrorru/dot"
 )
 
 type Table[ROW any] struct {
 	dialect   dialect.SQLDialect
-	tableInfo struct_info.TableInfo
+	tableInfo *struct_info.TableInfo
 	sqlTexts  struct_info.SqlTexts
 }
 
@@ -25,7 +25,7 @@ func NewTableVal[ROW any](d dialect.SQLDialect) Table[ROW] {
 	return Table[ROW]{
 		dialect:   d,
 		tableInfo: tableInfo,
-		sqlTexts:  struct_info.SqlBuilderVal.SQLTexts(d, &tableInfo),
+		sqlTexts:  struct_info.SqlBuilderVal.SQLTexts(d, tableInfo),
 	}
 }
 
@@ -34,7 +34,7 @@ func NewTable[ROW any](d dialect.SQLDialect) *Table[ROW] {
 }
 
 type tableInternals struct {
-	TableInfo struct_info.TableInfo
+	TableInfo *struct_info.TableInfo
 	SqlTexts  struct_info.SqlTexts
 }
 
@@ -86,7 +86,7 @@ func (t *Table[ROW]) Del(ctx context.Context, tx TxProcessor, keys ...any) (Resu
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *filter.Filter) (result []*ROW, err error) {
+func (t *Table[ROW]) Many(ctx context.Context, tx TxProcessor, filter *Filter) (result []*ROW, err error) {
 	var (
 		query strings.Builder
 		args  []any

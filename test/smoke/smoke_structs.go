@@ -1,3 +1,5 @@
+//go:build smoke
+
 package smoke
 
 type IdNameAgeRow struct {

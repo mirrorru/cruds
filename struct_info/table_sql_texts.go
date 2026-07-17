@@ -1,9 +1,10 @@
 package struct_info
 
 import (
-	"quick-crud/defs"
-	quick_crud "quick-crud/dialect"
 	"strings"
+
+	"github.com/mirrorru/cruds/defs"
+	qc "github.com/mirrorru/cruds/dialect"
 )
 
 type SqlTexts struct {
@@ -20,7 +21,7 @@ var SqlBuilderVal sqlBuilder
 type sqlBuilder struct {
 }
 
-func (b sqlBuilder) SQLTexts(d quick_crud.SQLDialect, ti *TableInfo) SqlTexts {
+func (b sqlBuilder) SQLTexts(d qc.SQLDialect, ti *TableInfo) SqlTexts {
 	return SqlTexts{
 		Insert:    b.buildInsertSQL(d, ti),
 		Update:    b.buildUpdateSQL(d, ti),
@@ -31,7 +32,7 @@ func (b sqlBuilder) SQLTexts(d quick_crud.SQLDialect, ti *TableInfo) SqlTexts {
 	}
 }
 
-func (b sqlBuilder) buildGetOneSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
+func (b sqlBuilder) buildGetOneSQL(d qc.SQLDialect, ti *TableInfo) string {
 	if len(ti.SelectIdxList) == 0 || len(ti.PKIdxList) == 0 {
 		return ""
 	}
@@ -61,7 +62,7 @@ func (sqlBuilder) buildListSQL(ti *TableInfo) string {
 	return sb.String()
 }
 
-func (sqlBuilder) buildInsertSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
+func (sqlBuilder) buildInsertSQL(d qc.SQLDialect, ti *TableInfo) string {
 	if len(ti.InsertIdxList) == 0 {
 		return ""
 	}
@@ -91,7 +92,7 @@ func (sqlBuilder) buildInsertSQL(d quick_crud.SQLDialect, ti *TableInfo) string 
 	return sb.String()
 }
 
-func (b sqlBuilder) buildUpdateSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
+func (b sqlBuilder) buildUpdateSQL(d qc.SQLDialect, ti *TableInfo) string {
 	if len(ti.UpdateIdxList) == 0 || len(ti.PKIdxList) == 0 {
 		return ""
 	}
@@ -122,7 +123,7 @@ func (b sqlBuilder) buildUpdateSQL(d quick_crud.SQLDialect, ti *TableInfo) strin
 	return sb.String()
 }
 
-func (b sqlBuilder) buildDeleteSQL(d quick_crud.SQLDialect, ti *TableInfo) string {
+func (b sqlBuilder) buildDeleteSQL(d qc.SQLDialect, ti *TableInfo) string {
 	if len(ti.PKIdxList) == 0 {
 		return ""
 	}
@@ -135,7 +136,7 @@ func (b sqlBuilder) buildDeleteSQL(d quick_crud.SQLDialect, ti *TableInfo) strin
 	return sb.String()
 }
 
-func (sqlBuilder) writeWhereClauses(offset int, sb *strings.Builder, d quick_crud.SQLDialect, ti *TableInfo) {
+func (sqlBuilder) writeWhereClauses(offset int, sb *strings.Builder, d qc.SQLDialect, ti *TableInfo) {
 	sb.WriteString(defs.SQLWhere)
 	for pos, idx := range ti.PKIdxList {
 		if pos > 0 {

@@ -6,18 +6,17 @@ package repo
 import (
 	"context"
 	"errors"
-	"quick-crud"
 	"strings"
 
-	"quick-crud/defs"
-	"quick-crud/dialect"
-	"quick-crud/filter"
-	"quick-crud/struct_info"
+	qc "github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/struct_info"
 
-	"quick-crud/test/gen/model"
+	"github.com/mirrorru/cruds/test/gen/model"
 )
 
-var _ quick_crud.TypedTable[model.UserRow] = (*TableUserRow)(nil)
+var _ qc.TypedTable[model.UserRow] = (*TableUserRow)(nil)
 
 type TableUserRow struct {
 	dialect   dialect.SQLDialect
@@ -34,17 +33,17 @@ func NewTableUserRowVal(d dialect.SQLDialect) TableUserRow {
 	tableInfo := struct_info.TableInfo{
 		SQLName: "user_row",
 		Fields: struct_info.TableFields{
-			{Path: []string{"ID" }, SQLName: "id", IsPK: true, CanSelect: true},
-			{Path: []string{"Name" }, SQLName: "name", CanSelect: true, CanInsert: true, CanUpdate: true, SortPos: 1},
-			{Path: []string{"Age" }, SQLName: "age", CanSelect: true, CanInsert: true, CanUpdate: true},
+			{Path: []string{"ID"}, SQLName: "id", IsPK: true, CanSelect: true},
+			{Path: []string{"Name"}, SQLName: "name", CanSelect: true, CanInsert: true, CanUpdate: true, SortPos: 1},
+			{Path: []string{"Age"}, SQLName: "age", CanSelect: true, CanInsert: true, CanUpdate: true},
 		},
-		FieldNameIdx:  map[string]int{"id": 0, "name": 1, "age": 2 },
-		PKIdxList:     []int{0 },
-		InsertIdxList: []int{1, 2 },
-		UpdateIdxList: []int{1, 2 },
-		SelectIdxList: []int{0, 1, 2 },
-		SortIdxList:   []int{1 },
-		RefIdxList:    []int{ },
+		FieldNameIdx:  map[string]int{"id": 0, "name": 1, "age": 2},
+		PKIdxList:     []int{0},
+		InsertIdxList: []int{1, 2},
+		UpdateIdxList: []int{1, 2},
+		SelectIdxList: []int{0, 1, 2},
+		SortIdxList:   []int{1},
+		RefIdxList:    []int{},
 	}
 
 	return TableUserRow{
@@ -66,18 +65,18 @@ func (t *TableUserRow) Internals() tableUserRowInternals {
 }
 
 func (t *TableUserRow) scanRefs(buf *model.UserRow) []any {
-	return []any{&buf.ID, &buf.Name, &buf.Age }
+	return []any{&buf.ID, &buf.Name, &buf.Age}
 }
 
 func (t *TableUserRow) insertArgs(row *model.UserRow) []any {
-	return []any{row.Name, row.Age }
+	return []any{row.Name, row.Age}
 }
 
 func (t *TableUserRow) updateArgs(row *model.UserRow) []any {
-	return []any{row.Name, row.Age, row.ID }
+	return []any{row.Name, row.Age, row.ID}
 }
 
-func (t *TableUserRow) Ins(ctx context.Context, tx quick_crud.TxProcessor, row *model.UserRow) (*model.UserRow, quick_crud.Result, error) {
+func (t *TableUserRow) Ins(ctx context.Context, tx qc.TxProcessor, row *model.UserRow) (*model.UserRow, qc.Result, error) {
 	args := t.insertArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Insert, args)
@@ -90,7 +89,7 @@ func (t *TableUserRow) Ins(ctx context.Context, tx quick_crud.TxProcessor, row *
 	return buf, nil, err
 }
 
-func (t *TableUserRow) Upd(ctx context.Context, tx quick_crud.TxProcessor, row *model.UserRow) (*model.UserRow, quick_crud.Result, error) {
+func (t *TableUserRow) Upd(ctx context.Context, tx qc.TxProcessor, row *model.UserRow) (*model.UserRow, qc.Result, error) {
 	args := t.updateArgs(row)
 	if !t.dialect.SupportsReturning() {
 		sqlResult, err := tx.ExecContext(ctx, t.sqlTexts.Update, args)
@@ -103,7 +102,7 @@ func (t *TableUserRow) Upd(ctx context.Context, tx quick_crud.TxProcessor, row *
 	return buf, nil, err
 }
 
-func (t *TableUserRow) One(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (*model.UserRow, error) {
+func (t *TableUserRow) One(ctx context.Context, tx qc.TxProcessor, keys ...any) (*model.UserRow, error) {
 	buf := new(model.UserRow)
 	refs := t.scanRefs(buf)
 	err := tx.QueryRowContext(ctx, t.sqlTexts.GetOne, keys...).Scan(refs...)
@@ -111,11 +110,11 @@ func (t *TableUserRow) One(ctx context.Context, tx quick_crud.TxProcessor, keys 
 	return buf, err
 }
 
-func (t *TableUserRow) Del(ctx context.Context, tx quick_crud.TxProcessor, keys ...any) (quick_crud.Result, error) {
+func (t *TableUserRow) Del(ctx context.Context, tx qc.TxProcessor, keys ...any) (qc.Result, error) {
 	return tx.ExecContext(ctx, t.sqlTexts.Delete, keys...)
 }
 
-func (t *TableUserRow) Many(ctx context.Context, tx quick_crud.TxProcessor, filter *filter.Filter) (result []*model.UserRow, err error) {
+func (t *TableUserRow) Many(ctx context.Context, tx qc.TxProcessor, filter *qc.Filter) (result []*model.UserRow, err error) {
 	var (
 		query strings.Builder
 		args  []any
