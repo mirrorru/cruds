@@ -24,78 +24,6 @@ type srcSpec struct {
 	pattern string
 }
 
-type fieldTagFlags struct {
-	IsPK        bool
-	ReadOnly    bool
-	AutoGen     bool
-	Embed       bool
-	ForceUpdate bool
-	ForceInsert bool
-	SkipReading bool
-	ColName     string
-	Prefix      string
-	Ref         string
-	Sort        string
-}
-
-func (f *fieldTagFlags) merge(parent fieldTagFlags) {
-	f.IsPK = f.IsPK || parent.IsPK
-	f.ReadOnly = f.ReadOnly || parent.ReadOnly
-	f.AutoGen = f.AutoGen || parent.AutoGen
-	f.ForceUpdate = f.ForceUpdate || parent.ForceUpdate
-	f.ForceInsert = f.ForceInsert || parent.ForceInsert
-	f.SkipReading = f.SkipReading || parent.SkipReading
-	f.Prefix = parent.Prefix + f.Prefix
-	if f.Sort == "" {
-		f.Sort = parent.Sort
-	}
-}
-
-func (f *fieldTagFlags) canInsert() bool {
-	return f.ForceInsert || !f.ReadOnly && !f.AutoGen
-}
-
-func (f *fieldTagFlags) canUpdate() bool {
-	return f.ForceUpdate || !f.ReadOnly && !f.IsPK
-}
-
-func (f *fieldTagFlags) canSelect() bool {
-	return !f.SkipReading
-}
-
-func parseFieldTag(tag string) (result fieldTagFlags, ok bool) {
-	keys := strings.Split(tag, struct_info.KeysSeparator)
-	for _, key := range keys {
-		switch {
-		case key == struct_info.KeyPK:
-			result.IsPK = true
-		case key == struct_info.KeyRO:
-			result.ReadOnly = true
-		case key == struct_info.KeyAuto:
-			result.AutoGen = true
-		case key == struct_info.KeyEmbed:
-			result.Embed = true
-		case strings.HasPrefix(key, struct_info.KeyOmit):
-			return result, false
-		case key == struct_info.KeyInsert:
-			result.ForceInsert = true
-		case key == struct_info.KeyUpdate:
-			result.ForceUpdate = true
-		case key == struct_info.KeyHide:
-			result.SkipReading = true
-		case strings.HasPrefix(key, struct_info.KeyColName):
-			result.ColName = key[len(struct_info.KeyColName):]
-		case strings.HasPrefix(key, struct_info.KeyPrefix):
-			result.Prefix = key[len(struct_info.KeyPrefix):]
-		case strings.HasPrefix(key, struct_info.KeyRef):
-			result.Ref = key[len(struct_info.KeyRef):]
-		case strings.HasPrefix(key, struct_info.KeySort):
-			result.Sort = key[len(struct_info.KeySort):]
-		}
-	}
-	return result, true
-}
-
 type genField struct {
 	Name         string
 	AccessExpr   string
@@ -183,10 +111,10 @@ func main() {
 }
 
 func printHelp() {
-	fmt.Println("qcgen - Code generator for typed table implementations")
+	fmt.Println("crudsgen - Code generator for typed table implementations")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  qcgen -src=<path:pattern> [-src=...] -dest=<dir> [-pkg=<name>] [-no-genstr]")
+	fmt.Println("  crudsgen -src=<path:pattern> [-src=...] -dest=<dir> [-pkg=<name>] [-no-genstr]")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -src        Source specification (can be repeated)")
@@ -398,13 +326,13 @@ func findTypes(dir, pattern string) ([]typeInfo, error) {
 func parseStructFields(structType *ast.StructType, allStructs map[string]*ast.StructType) []genField {
 	var result []genField
 	for _, field := range structType.Fields.List {
-		fields := collectFieldInfo(field, allStructs, fieldTagFlags{}, nil)
+		fields := collectFieldInfo(field, allStructs, struct_info.FieldTagFlags{}, nil)
 		result = append(result, fields...)
 	}
 	return result
 }
 
-func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, parentFlags fieldTagFlags, parentPath []string) []genField {
+func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, parentFlags struct_info.FieldTagFlags, parentPath []string) []genField {
 	if len(field.Names) > 0 && !field.Names[0].IsExported() {
 		return nil
 	}
@@ -418,11 +346,11 @@ func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, p
 		tagStr = extractTblTag(tagStr)
 	}
 
-	flags, processable := parseFieldTag(tagStr)
+	flags, processable := struct_info.ParseFieldTag(tagStr)
 	if !processable {
 		return nil
 	}
-	flags.merge(parentFlags)
+	flags.Merge(parentFlags)
 
 	isEmbedded := false
 	var embeddedTypeName string
@@ -496,9 +424,9 @@ func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, p
 		Path:         path,
 		SQLName:      sqlName,
 		IsPK:         flags.IsPK,
-		CanSelect:    flags.canSelect(),
-		CanInsert:    flags.canInsert(),
-		CanUpdate:    flags.canUpdate(),
+		CanSelect:    flags.CanSelect(),
+		CanInsert:    flags.CanInsert(),
+		CanUpdate:    flags.CanUpdate(),
 		SortPos:      sortPos,
 		SortBackward: sortBackward,
 		RefTable:     refTable,
@@ -682,7 +610,7 @@ func generateFile(cfg genConfig, t typeInfo) error {
 	if !cfg.noGenStr {
 		args := fmt.Sprintf("-src=%s:%s -dest=%s -pkg=%s",
 			filepath.Dir(mustFindGoMod(".")), "*", cfg.dest, cfg.pkg)
-		data.GoGenerate = "//go:generate qcgen " + args
+		data.GoGenerate = "//go:generate crudsgen " + args
 	}
 
 	tmpl, err := template.New("table").Parse(tableTemplate)
@@ -694,7 +622,7 @@ func generateFile(cfg genConfig, t typeInfo) error {
 }
 
 const tableTemplate = `{{if .GoGenerate}}{{.GoGenerate}}
-{{end}}// Code generated by qcgen; DO NOT EDIT.
+{{end}}// Code generated by crudsgen; DO NOT EDIT.
 
 package {{.Package}}
 

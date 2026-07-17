@@ -53,7 +53,7 @@ tasks:
     desc: Установка программ
     cmds:
       - task: install:lint
-      - task: install:qcgen
+      - task: install:crudsgen
 
 
   install:lint: ## Установка golangci-lint
@@ -63,29 +63,26 @@ tasks:
           CMD: golangci-lint
           INSTALL_CMD: GOBIN={{.LOCAL_BIN}} go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
-  install:qcgen:
-    desc: Установка генератора qcgen
+  install:crudsgen:
+    desc: Установка генератора crudsgen
     cmds:
-      - task: ensure
-        vars:
-          CMD: qcgen
-          INSTALL_CMD: GOBIN={{.LOCAL_BIN}} go install ./cmd/qcgen
+      - GOBIN={{.LOCAL_BIN}} go install ./cmd/crudsgen
 
 
   gen:
     desc: Выполнение полной генерации кода
     deps:
       - task: gen:go
-      - task: gen:qcgen
+      - task: gen:crudsgen
 
   gen:go:
     desc: Выполнение генерации кода через `go generate` установленными инструментами
     cmd: go generate ./...
 
-  gen:qcgen:
-    desc: Генерация типизированных реализаций таблиц через qcgen
+  gen:crudsgen:
+    desc: Генерация типизированных реализаций таблиц через crudsgen
     cmds:
-      - '{{.LOCAL_BIN}}/qcgen -src=test/gen/model:*Row -dest=test/gen/repo'
+      - go run cmd/crudsgen/main.go -src=test/gen/model:*Row -dest=test/gen/repo
 
 #.PHONY: lint
   lint:
