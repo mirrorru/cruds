@@ -1,4 +1,4 @@
-# Quick CRUD
+# CRUDs
 
 A library to simplify CRUD operations with Go structs using generics.
 
