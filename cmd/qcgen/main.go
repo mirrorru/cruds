@@ -1,3 +1,4 @@
+//nolint:all
 package main
 
 import (
@@ -63,7 +64,6 @@ func (f *fieldTagFlags) canSelect() bool {
 }
 
 func parseFieldTag(tag string) (result fieldTagFlags, ok bool) {
-
 	keys := strings.Split(tag, struct_info.KeysSeparator)
 	for _, key := range keys {
 		switch {

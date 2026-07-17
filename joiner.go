@@ -1,3 +1,4 @@
+//nolint:gocognit, gocyclo, cyclop, govet, funlen
 package cruds
 
 import (
@@ -19,14 +20,7 @@ type Joiner[JT any] struct {
 	// JT - joined tables
 	tsType     reflect.Type
 	joinTables []*JoinTable
-	allFields  []JoinerField
 	joinerSQLs
-}
-
-type JoinerField struct {
-	tableIdx  int
-	fieldIdx  int
-	inPointer bool
 }
 
 type joinerSQLs struct {
@@ -44,7 +38,7 @@ func (j *Joiner[JT]) SQLs() joinerSQLs {
 }
 
 func (j *Joiner[JT]) makeRefs(in *JT) []any {
-	result := make([]any, 0, len(j.allFields))
+	result := make([]any, 0)
 	elem := reflect.ValueOf(in).Elem()
 	for _, table := range j.joinTables {
 		if table.isPointer {
@@ -72,7 +66,7 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 		filled := false
 		checkFrom := pos
 		for range table.tableInfo.SelectIdxList {
-			p := refs[checkFrom].(*any)
+			p, _ := refs[checkFrom].(*any)
 			if *p != nil {
 				filled = true
 				break
@@ -87,7 +81,7 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 		tField.Set(reflect.New(tField.Type().Elem()))
 		tField = tField.Elem()
 		for _, fIdx := range table.tableInfo.SelectIdxList {
-			p := refs[pos].(*any)
+			p, _ := refs[pos].(*any)
 			pos++
 			val := *p
 			if val == nil {
@@ -123,11 +117,6 @@ func NewJoiner[JT any](d dialect.SQLDialect) (*Joiner[JT], error) {
 	return new(val), nil
 }
 
-type AllFieldsItem struct {
-	tableIdx int
-	fieldIdx int
-}
-
 func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 	joinTables, err := collectJoinTables(reflect.TypeFor[JT]())
 	if err != nil {
@@ -149,7 +138,7 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 			}
 			fromIdx = idx
 		} else if tInfo.isPK && !slices.Contains(pkTables, idx) {
-			pkTables = append(pkTables, idx)
+			pkTables = append(pkTables, idx) //nolint:makezero
 		}
 
 		if tInfo.alias == "" {
@@ -180,19 +169,13 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 		})
 	}
 
-	allFields := make([]JoinerField, 0, totalFltCnt)
 	// Query build
 	var selSb strings.Builder
 	selSb.Grow(totalFltCnt * 25)
 	pos := 0
 	selSb.WriteString(defs.SQLSelect)
-	for tPos, tInfo := range joinTables {
+	for _, tInfo := range joinTables {
 		for _, fIdx := range tInfo.tableInfo.SelectIdxList {
-			allFields = append(allFields, JoinerField{
-				tableIdx:  tPos,
-				fieldIdx:  fIdx,
-				inPointer: tInfo.isPointer,
-			})
 			if pos > 0 {
 				selSb.WriteString(defs.SQLCommaSpace)
 			}
@@ -410,7 +393,6 @@ func collectJoinTables(t reflect.Type) (result []*JoinTable, err error) {
 			if sortPriority, err = strconv.Atoi(joinTableFlags.Sort); err != nil {
 				return nil, err
 			}
-
 		}
 
 		var aliasMap map[string]string

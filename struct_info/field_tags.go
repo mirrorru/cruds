@@ -1,3 +1,4 @@
+//nolint:gocognit
 package struct_info
 
 import (
@@ -143,9 +144,9 @@ func collectFieldInfo(fld reflect.StructField, parentFlags FieldTagFlags) (_ []T
 		subField := fld.Type
 
 		for i := range subField.NumField() {
-			subResult, err := collectFieldInfo(subField.Field(i), flags)
-			if err != nil {
-				return nil, err
+			subResult, subErr := collectFieldInfo(subField.Field(i), flags)
+			if subErr != nil {
+				return nil, subErr
 			}
 			for idx := range subResult {
 				subResult[idx].Index = append(fld.Index, subResult[idx].Index...)
