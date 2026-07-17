@@ -33,8 +33,6 @@ const (
 	InKVSeparator  = ":"
 )
 
-var _ = InKeySeparator
-
 type FieldTagFlags struct {
 	IsPK        bool // keyPK
 	ReadOnly    bool // keyRO

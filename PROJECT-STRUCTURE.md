@@ -4,7 +4,6 @@
 
 ### Корневой пакет (crudquick)
 - `table.go` — универсальная реализация `Table[ROW]` с использованием reflection
-- `query.go` — мульти-табличный запрос `Query[T]` для JOIN'ов между таблицами
 - `filter.go` — дерево условий фильтрации (ConditionNode, GroupNode, FilterNode)
 - `filter_test.go` — тесты системы фильтрации
 - `contracts.go` — интерфейсы и контракты (`TypedTable[ROW]`, `TxProcessor`, `Row`, `Result`, `Rows`)
@@ -42,12 +41,6 @@ SQL диалекты:
 - `table_info.go` — `TableInfo`, `GetTableInfo`
 - `table_info_test.go` — тесты
 - `table_sql_texts.go` — построение SQL текстов
-- `query_tags.go` — парсинг тегов `tbl` для Query-структур (from, join, alias, map, pk, omit, sort)
-- `query_tags_test.go` — тесты
-- `query_info.go` — `QueryTableInfo`, `QueryInfo`, `CollectQueryInfo` для мульти-табличных запросов
-- `query_info_test.go` — тесты
-- `query_sql.go` — `QuerySqlTexts`, `BuildQuerySqlTexts` для генерации SQL с JOIN'ами
-- `query_sql_test.go` — тесты
 
 ### tx_adapter
 Адаптеры для работы с БД:
