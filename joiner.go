@@ -18,7 +18,14 @@ type Joiner[JT any] struct {
 	// JT - joined tables
 	tsType     reflect.Type
 	joinTables []*JoinTable
+	allFields  []JoinerField
 	joinerSQLs
+}
+
+type JoinerField struct {
+	tableIdx  int
+	fieldIdx  int
+	inPointer bool
 }
 
 type joinerSQLs struct {
@@ -35,15 +42,65 @@ func (j *Joiner[JT]) SQLs() joinerSQLs {
 	return j.joinerSQLs
 }
 
-func (j *Joiner[JT]) makeRefs() (*JT, []any) {
-	result := new(JT)
-	return result, nil
+func (j *Joiner[JT]) makeRefs(in *JT) []any {
+	result := make([]any, 0, len(j.allFields))
+	elem := reflect.ValueOf(in).Elem()
+	for _, table := range j.joinTables {
+		if table.isPointer {
+			refs := make([]any, len(table.tableInfo.SelectIdxList))
+			for i := range refs {
+				result = append(result, &refs[i])
+			}
+			continue
+		}
+		tableRef := elem.FieldByIndex(table.index)
+		refs := table.tableInfo.Fields.ExtractRefs(tableRef, table.tableInfo.SelectIdxList)
+		result = append(result, refs...)
+	}
+	return result
+}
+
+func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
+	pos := 0
+	rv := reflect.ValueOf(in).Elem()
+	for _, table := range j.joinTables {
+		if !table.isPointer {
+			pos += len(table.tableInfo.SelectIdxList)
+			continue
+		}
+		filled := false
+		checkFrom := pos
+		for range table.tableInfo.SelectIdxList {
+			p := refs[checkFrom].(*any)
+			if p != nil {
+				filled = true
+				break
+			}
+			checkFrom++
+		}
+		if !filled {
+			pos += len(table.tableInfo.SelectIdxList)
+			continue
+		}
+		tField := rv.FieldByIndex(table.index)
+		tField.Set(reflect.New(tField.Type().Elem()))
+		tField = tField.Elem()
+		for range table.tableInfo.SelectIdxList {
+			p := refs[pos].(*any)
+			pos++
+			if p == nil {
+				continue
+			}
+			// Здесь надо сохранить значение!
+		}
+	}
 }
 
 func (j *Joiner[JT]) One(ctx context.Context, tx TxProcessor, keys ...any) (*JT, error) {
-	result, refs := j.makeRefs()
+	result := new(JT)
+	refs := j.makeRefs(result)
 	err := tx.QueryRowContext(ctx, j.GetOneSQL, keys...).Scan(refs...)
-	
+	j.applyRefs(result, refs)
 	return result, err
 }
 
@@ -111,13 +168,20 @@ func NewJoinerVal[JT any](d dialect.SQLDialect) (Joiner[JT], error) {
 			return joinTables[a].sortPriority - joinTables[b].sortPriority
 		})
 	}
+
+	allFields := make([]JoinerField, 0, totalFltCnt)
 	// Query build
 	var selSb strings.Builder
 	selSb.Grow(totalFltCnt * 25)
 	pos := 0
 	selSb.WriteString(defs.SQLSelect)
-	for _, tInfo := range joinTables {
+	for tPos, tInfo := range joinTables {
 		for _, fIdx := range tInfo.tableInfo.SelectIdxList {
+			allFields = append(allFields, JoinerField{
+				tableIdx:  tPos,
+				fieldIdx:  fIdx,
+				inPointer: tInfo.isPointer,
+			})
 			if pos > 0 {
 				selSb.WriteString(defs.SQLCommaSpace)
 			}

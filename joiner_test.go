@@ -38,19 +38,13 @@ func (JoinRowLeftJoin) SQLName() string {
 }
 
 type JoinRowAnonymousVal struct {
-	InnerVal JoinRowInnerJoin `tbl:"pk"`
-	LeftVal  JoinRowLeftJoin  `tbl:"join=left;alias=LV"`
-}
-
-type JoinRowAnonymousRef struct {
-	InnerRef *JoinRowInnerJoin `tbl:"map=table_from:LV"`
-	LeftRef  *JoinRowLeftJoin  `tbl:"map=table_from:LV;sort=10"`
+	InnerVal JoinRowInnerJoin
+	LeftVal  *JoinRowLeftJoin `tbl:"join=left;alias=LV;sort=10"`
 }
 
 type JoinSummary struct {
 	From JoinRowFrom
 	JoinRowAnonymousVal
-	JoinRowAnonymousRef
 }
 
 func TestNewJoiner(t *testing.T) {
