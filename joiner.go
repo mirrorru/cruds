@@ -53,7 +53,7 @@ func (j *Joiner[JT]) makeRefs(in *JT) []any {
 			}
 			continue
 		}
-		tableRef := elem.FieldByIndex(table.index)
+		tableRef := elem.FieldByIndex(table.index).Addr().Interface()
 		refs := table.tableInfo.Fields.ExtractRefs(tableRef, table.tableInfo.SelectIdxList)
 		result = append(result, refs...)
 	}
@@ -72,7 +72,7 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 		checkFrom := pos
 		for range table.tableInfo.SelectIdxList {
 			p := refs[checkFrom].(*any)
-			if p != nil {
+			if *p != nil {
 				filled = true
 				break
 			}
@@ -85,13 +85,15 @@ func (j *Joiner[JT]) applyRefs(in *JT, refs []any) {
 		tField := rv.FieldByIndex(table.index)
 		tField.Set(reflect.New(tField.Type().Elem()))
 		tField = tField.Elem()
-		for range table.tableInfo.SelectIdxList {
+		for _, fIdx := range table.tableInfo.SelectIdxList {
 			p := refs[pos].(*any)
 			pos++
-			if p == nil {
+			val := *p
+			if val == nil {
 				continue
 			}
-			// Здесь надо сохранить значение!
+			fieldVal := tField.FieldByIndex(table.tableInfo.Fields[fIdx].Index)
+			fieldVal.Set(reflect.ValueOf(val))
 		}
 	}
 }
