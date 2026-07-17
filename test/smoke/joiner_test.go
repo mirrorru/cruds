@@ -1,4 +1,6 @@
-package crudquick_test
+//go:build smoke
+
+package smoke
 
 import (
 	"context"
@@ -7,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/mirrorru/crudquick"
-	"github.com/mirrorru/crudquick/test/smoke"
 	"github.com/mirrorru/crudquick/tx_adapter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,8 +18,8 @@ import (
 type JoinRowFrom struct {
 	ID       int64 `tbl:"pk;auto"`
 	Name     string
-	Birthday smoke.ClientBirthday
-	Gender   smoke.GenderType
+	Birthday ClientBirthday
+	Gender   GenderType
 }
 
 func (JoinRowFrom) SQLName() string {
@@ -39,8 +40,8 @@ type JoinRowLeftJoin struct {
 	ID       int64  `tbl:"pk;auto"`
 	RefID    int64  `tbl:"ref=table_from:id"`
 	LeftName string `tbl:"sort=1"`
-	Birthday smoke.ClientBirthday
-	Gender   smoke.GenderType
+	Birthday ClientBirthday
+	Gender   GenderType
 }
 
 func (JoinRowLeftJoin) SQLName() string {
@@ -133,7 +134,7 @@ func TestJoinerOne(t *testing.T) {
 	require.Equal(t, int64(1), result.From.ID)
 	assert.Equal(t, "from_1", result.From.Name)
 	assert.Equal(t, "2001-02-03 00:00:00 +0000 UTC", result.From.Birthday.String())
-	assert.Equal(t, smoke.GenderTypeMale, result.From.Gender)
+	assert.Equal(t, GenderTypeMale, result.From.Gender)
 
 	require.NotNil(t, result.InnerVal)
 	assert.Equal(t, "inner_1", result.InnerVal.InnerName)
@@ -145,7 +146,7 @@ func TestJoinerOne(t *testing.T) {
 	require.NotNil(t, result2)
 	require.Equal(t, int64(2), result2.From.ID)
 	assert.Equal(t, "2004-05-06 00:00:00 +0000 UTC", result2.From.Birthday.String())
-	assert.Equal(t, smoke.GenderTypeFemale, result2.From.Gender)
+	assert.Equal(t, GenderTypeFemale, result2.From.Gender)
 	assert.Equal(t, "from_2", result2.From.Name)
 	require.NotNil(t, result2.InnerVal)
 	assert.Equal(t, "inner_2", result2.InnerVal.InnerName)
