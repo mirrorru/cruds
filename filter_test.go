@@ -1,10 +1,10 @@
-package crudquick_test
+package cruds_test
 
 import (
 	"testing"
 
-	"github.com/mirrorru/crudquick"
-	"github.com/mirrorru/crudquick/dialect"
+	"github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/dialect"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,8 +19,8 @@ type filterTestRow struct {
 func TestBuildWhere_NilRoot(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
-	f := crudquick.Filter{Range: nil}
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	f := cruds.Filter{Range: nil}
 	query, args, err := f.BuildWhere(table.Internals().TableInfo.Fields, dialect.SQLiteDialect{})
 	require.NoError(t, err)
 	assert.Empty(t, query)
@@ -30,11 +30,11 @@ func TestBuildWhere_NilRoot(t *testing.T) {
 func TestBuildWhere_SingleCondition_SQLite(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(1, crudquick.CmdEq, "Alice")
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(1, cruds.CmdEq, "Alice")
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -47,11 +47,11 @@ func TestBuildWhere_SingleCondition_SQLite(t *testing.T) {
 func TestBuildWhere_SingleCondition_PG(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(1, crudquick.CmdEq, "Alice")
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(1, cruds.CmdEq, "Alice")
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.PostgreSQLDialect{})
 	require.NoError(t, err)
@@ -64,14 +64,14 @@ func TestBuildWhere_SingleCondition_PG(t *testing.T) {
 func TestBuildWhere_MultipleAND(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.And(
-		crudquick.Cond(1, crudquick.CmdEq, "Alice"),
-		crudquick.Cond(2, crudquick.CmdGte, 25),
+	root := cruds.And(
+		cruds.Cond(1, cruds.CmdEq, "Alice"),
+		cruds.Cond(2, cruds.CmdGte, 25),
 	)
-	f := crudquick.Filter{Range: root}
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -85,14 +85,14 @@ func TestBuildWhere_MultipleAND(t *testing.T) {
 func TestBuildWhere_OR(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Or(
-		crudquick.Cond(1, crudquick.CmdEq, "Alice"),
-		crudquick.Cond(1, crudquick.CmdEq, "Bob"),
+	root := cruds.Or(
+		cruds.Cond(1, cruds.CmdEq, "Alice"),
+		cruds.Cond(1, cruds.CmdEq, "Bob"),
 	)
-	f := crudquick.Filter{Range: root}
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -104,11 +104,11 @@ func TestBuildWhere_OR(t *testing.T) {
 func TestBuildWhere_NOT(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Not(crudquick.Cond(2, crudquick.CmdEq, 18))
-	f := crudquick.Filter{Range: root}
+	root := cruds.Not(cruds.Cond(2, cruds.CmdEq, 18))
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -121,17 +121,17 @@ func TestBuildWhere_NOT(t *testing.T) {
 func TestBuildWhere_Nested(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.And(
-		crudquick.Cond(1, crudquick.CmdEq, "Alice"),
-		crudquick.Or(
-			crudquick.Cond(2, crudquick.CmdGt, 20),
-			crudquick.Cond(2, crudquick.CmdLt, 10),
+	root := cruds.And(
+		cruds.Cond(1, cruds.CmdEq, "Alice"),
+		cruds.Or(
+			cruds.Cond(2, cruds.CmdGt, 20),
+			cruds.Cond(2, cruds.CmdLt, 10),
 		),
 	)
-	f := crudquick.Filter{Range: root}
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -148,28 +148,28 @@ func TestBuildWhere_Operators(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		op       crudquick.CommandOp
+		op       cruds.CommandOp
 		value    any
 		wantSQL  string
 		wantArgs []any
 	}{
-		{"Eq", crudquick.CmdEq, 42, "= ?", []any{42}},
-		{"NotEq", crudquick.CmdNotEq, 42, "<> ?", []any{42}},
-		{"Gt", crudquick.CmdGt, 42, "> ?", []any{42}},
-		{"Gte", crudquick.CmdGte, 42, ">= ?", []any{42}},
-		{"Lt", crudquick.CmdLt, 42, "< ?", []any{42}},
-		{"Lte", crudquick.CmdLte, 42, "<= ?", []any{42}},
+		{"Eq", cruds.CmdEq, 42, "= ?", []any{42}},
+		{"NotEq", cruds.CmdNotEq, 42, "<> ?", []any{42}},
+		{"Gt", cruds.CmdGt, 42, "> ?", []any{42}},
+		{"Gte", cruds.CmdGte, 42, ">= ?", []any{42}},
+		{"Lt", cruds.CmdLt, 42, "< ?", []any{42}},
+		{"Lte", cruds.CmdLte, 42, "<= ?", []any{42}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+			table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 			tf := table.Internals().TableInfo.Fields
 
-			root := crudquick.Cond(2, tt.op, tt.value)
-			f := crudquick.Filter{Range: root}
+			root := cruds.Cond(2, tt.op, tt.value)
+			f := cruds.Filter{Range: root}
 
 			query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 			require.NoError(t, err)
@@ -185,11 +185,11 @@ func TestBuildWhere_IsNull_IsNotNull(t *testing.T) {
 	t.Run("IsNull", func(t *testing.T) {
 		t.Parallel()
 
-		table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+		table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 		tf := table.Internals().TableInfo.Fields
 
-		root := crudquick.Cond(1, crudquick.CmdIsNull, nil)
-		f := crudquick.Filter{Range: root}
+		root := cruds.Cond(1, cruds.CmdIsNull, nil)
+		f := cruds.Filter{Range: root}
 
 		query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 		require.NoError(t, err)
@@ -200,11 +200,11 @@ func TestBuildWhere_IsNull_IsNotNull(t *testing.T) {
 	t.Run("IsNotNull", func(t *testing.T) {
 		t.Parallel()
 
-		table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+		table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 		tf := table.Internals().TableInfo.Fields
 
-		root := crudquick.Cond(1, crudquick.CmdIsNotNull, nil)
-		f := crudquick.Filter{Range: root}
+		root := cruds.Cond(1, cruds.CmdIsNotNull, nil)
+		f := cruds.Filter{Range: root}
 
 		query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 		require.NoError(t, err)
@@ -216,11 +216,11 @@ func TestBuildWhere_IsNull_IsNotNull(t *testing.T) {
 func TestBuildWhere_Like(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(1, crudquick.CmdLike, "%Alice%")
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(1, cruds.CmdLike, "%Alice%")
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -231,11 +231,11 @@ func TestBuildWhere_Like(t *testing.T) {
 func TestBuildWhere_ILike_PG(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(1, crudquick.CmdILike, "%Alice%")
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(1, cruds.CmdILike, "%Alice%")
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.PostgreSQLDialect{})
 	require.NoError(t, err)
@@ -246,11 +246,11 @@ func TestBuildWhere_ILike_PG(t *testing.T) {
 func TestBuildWhere_ILike_SQLite(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(1, crudquick.CmdILike, "%Alice%")
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(1, cruds.CmdILike, "%Alice%")
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -262,11 +262,11 @@ func TestBuildWhere_ILike_SQLite(t *testing.T) {
 func TestBuildWhere_In(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(2, crudquick.CmdIn, []any{20, 30, 40})
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(2, cruds.CmdIn, []any{20, 30, 40})
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.NoError(t, err)
@@ -278,15 +278,15 @@ func TestBuildWhere_In(t *testing.T) {
 func TestBuildWhere_PlaceholderContinuity(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.PostgreSQLDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.And(
-		crudquick.Cond(1, crudquick.CmdEq, "Alice"),
-		crudquick.Cond(2, crudquick.CmdGte, 25),
-		crudquick.Cond(2, crudquick.CmdLte, 50),
+	root := cruds.And(
+		cruds.Cond(1, cruds.CmdEq, "Alice"),
+		cruds.Cond(2, cruds.CmdGte, 25),
+		cruds.Cond(2, cruds.CmdLte, 50),
 	)
-	f := crudquick.Filter{Range: root}
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.PostgreSQLDialect{})
 	require.NoError(t, err)
@@ -301,11 +301,11 @@ func TestBuildWhere_PlaceholderContinuity(t *testing.T) {
 func TestBuildWhere_OutOfRange(t *testing.T) {
 	t.Parallel()
 
-	table := crudquick.NewTable[filterTestRow](dialect.SQLiteDialect{})
+	table := cruds.NewTable[filterTestRow](dialect.SQLiteDialect{})
 	tf := table.Internals().TableInfo.Fields
 
-	root := crudquick.Cond(99, crudquick.CmdEq, "test")
-	f := crudquick.Filter{Range: root}
+	root := cruds.Cond(99, cruds.CmdEq, "test")
+	f := cruds.Filter{Range: root}
 
 	query, args, err := f.BuildWhere(tf, dialect.SQLiteDialect{})
 	require.Error(t, err)
@@ -316,15 +316,15 @@ func TestBuildWhere_OutOfRange(t *testing.T) {
 func TestCond_HasRequiredMethods(t *testing.T) {
 	t.Parallel()
 
-	node := crudquick.Cond(0, crudquick.CmdEq, "test")
+	node := cruds.Cond(0, cruds.CmdEq, "test")
 	assert.NotNil(t, node)
 
-	andNode := crudquick.And(node)
+	andNode := cruds.And(node)
 	assert.NotNil(t, andNode)
 
-	orNode := crudquick.Or(node, node)
+	orNode := cruds.Or(node, node)
 	assert.NotNil(t, orNode)
 
-	notNode := crudquick.Not(node)
+	notNode := cruds.Not(node)
 	require.NotNil(t, notNode)
 }

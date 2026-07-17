@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	qc "github.com/mirrorru/crudquick"
+	qc "github.com/mirrorru/cruds"
 )
 
 // DBAdapter адаптирует *sql.DB к интерфейсу TxProcessor.

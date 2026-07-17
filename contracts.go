@@ -1,4 +1,4 @@
-package crudquick
+package cruds
 
 import (
 	"context"

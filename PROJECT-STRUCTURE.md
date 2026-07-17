@@ -2,7 +2,7 @@
 
 ## Обзор файловой структуры
 
-### Корневой пакет (crudquick)
+### Корневой пакет (cruds)
 - `table.go` — универсальная реализация `Table[ROW]` с использованием reflection
 - `filter.go` — дерево условий фильтрации (ConditionNode, GroupNode, FilterNode)
 - `filter_test.go` — тесты системы фильтрации

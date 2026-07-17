@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mirrorru/crudquick"
-	"github.com/mirrorru/crudquick/tx_adapter"
+	"github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/tx_adapter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
@@ -60,7 +60,7 @@ type JoinSummary struct {
 
 func TestNewJoiner(t *testing.T) {
 	t.Parallel()
-	join, err := crudquick.NewJoiner[JoinSummary](crudquick.SQLite)
+	join, err := cruds.NewJoiner[JoinSummary](cruds.SQLite)
 	require.NoError(t, err)
 	require.NotNil(t, join)
 	for idx, table := range join.Tables() {
@@ -125,7 +125,7 @@ func TestJoinerOne(t *testing.T) {
 	`)
 		require.NoError(t, err)
 	}
-	join, err := crudquick.NewJoiner[JoinSummary](crudquick.SQLite)
+	join, err := cruds.NewJoiner[JoinSummary](cruds.SQLite)
 	require.NoError(t, err)
 
 	result, err := join.One(ctx, txAdapter, 1)

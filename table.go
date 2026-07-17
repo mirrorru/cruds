@@ -1,4 +1,4 @@
-package crudquick
+package cruds
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mirrorru/crudquick/defs"
-	"github.com/mirrorru/crudquick/dialect"
-	"github.com/mirrorru/crudquick/struct_info"
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/struct_info"
 
 	"github.com/mirrorru/dot"
 )

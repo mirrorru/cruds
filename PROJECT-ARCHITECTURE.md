@@ -13,7 +13,7 @@ Domain Driven Design & Clean Architecture.
 
 ### Application Layer (Слой приложения)
 
-- **Корневой пакет (crudquick)** — универсальная реализация `Table[ROW]` и система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`) с использованием reflection
+- **Корневой пакет (cruds)** — универсальная реализация `Table[ROW]` и система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`) с использованием reflection
 - **dialect_vars.go** — пакетные переменные-алиасы (`SQLite`, `PostgresSQL`) для удобного доступа к диалектам без импорта пакета `dialect`
 - **cmd/qcgen** — генератор кода для создания типизированных реализаций без reflection
 

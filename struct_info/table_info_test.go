@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mirrorru/crudquick/struct_info"
-	"github.com/mirrorru/crudquick/test/samples"
+	"github.com/mirrorru/cruds/struct_info"
+	"github.com/mirrorru/cruds/test/samples"
 
 	"github.com/stretchr/testify/assert"
 )

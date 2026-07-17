@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mirrorru/crudquick/helpers"
+	"github.com/mirrorru/cruds/helpers"
 )
 
 var TagName = "tbl"

@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/mirrorru/crudquick"
-	"github.com/mirrorru/crudquick/tx_adapter"
+	"github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/tx_adapter"
 
 	"github.com/mirrorru/dot"
 	_ "modernc.org/sqlite"
@@ -66,6 +66,6 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 }
 
-func (e *testEnv) TxProcessor() crudquick.TxProcessor {
+func (e *testEnv) TxProcessor() cruds.TxProcessor {
 	return tx_adapter.NewDBAdapterVal(e.db)
 }

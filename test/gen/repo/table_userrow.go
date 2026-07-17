@@ -8,12 +8,12 @@ import (
 	"errors"
 	"strings"
 
-	qc "github.com/mirrorru/crudquick"
-	"github.com/mirrorru/crudquick/defs"
-	"github.com/mirrorru/crudquick/dialect"
-	"github.com/mirrorru/crudquick/struct_info"
+	qc "github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/struct_info"
 
-	"github.com/mirrorru/crudquick/test/gen/model"
+	"github.com/mirrorru/cruds/test/gen/model"
 )
 
 var _ qc.TypedTable[model.UserRow] = (*TableUserRow)(nil)

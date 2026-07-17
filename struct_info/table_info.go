@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/mirrorru/crudquick/helpers"
+	"github.com/mirrorru/cruds/helpers"
 )
 
 type TableInfo struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mirrorru/crudquick/defs"
+	"github.com/mirrorru/cruds/defs"
 )
 
 type PostgreSQLDialect struct{}

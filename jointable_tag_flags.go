@@ -1,9 +1,9 @@
-package crudquick
+package cruds
 
 import (
 	"strings"
 
-	"github.com/mirrorru/crudquick/struct_info"
+	"github.com/mirrorru/cruds/struct_info"
 )
 
 type JoinTableTagFlags struct {

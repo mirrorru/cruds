@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	qc "github.com/mirrorru/crudquick"
+	qc "github.com/mirrorru/cruds"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )

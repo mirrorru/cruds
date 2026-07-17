@@ -3,8 +3,8 @@ package struct_info
 import (
 	"strings"
 
-	"github.com/mirrorru/crudquick/defs"
-	qc "github.com/mirrorru/crudquick/dialect"
+	"github.com/mirrorru/cruds/defs"
+	qc "github.com/mirrorru/cruds/dialect"
 )
 
 type SqlTexts struct {

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mirrorru/crudquick/helpers"
-	"github.com/mirrorru/crudquick/struct_info"
+	"github.com/mirrorru/cruds/helpers"
+	"github.com/mirrorru/cruds/struct_info"
 )
 
 type srcSpec struct {
@@ -703,11 +703,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/mirrorru/crudquick/contracts"
-	"github.com/mirrorru/crudquick/defs"
-	"github.com/mirrorru/crudquick/dialect"
-	"github.com/mirrorru/crudquick/filter"
-	"github.com/mirrorru/crudquick/struct_info"
+	"github.com/mirrorru/cruds/contracts"
+	"github.com/mirrorru/cruds/defs"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/filter"
+	"github.com/mirrorru/cruds/struct_info"
 
 	"{{.TypeInfo.PkgPath}}"
 )

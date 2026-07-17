@@ -3,7 +3,7 @@ package helpers_test
 import (
 	"testing"
 
-	"github.com/mirrorru/crudquick/helpers"
+	"github.com/mirrorru/cruds/helpers"
 
 	"github.com/stretchr/testify/assert"
 )

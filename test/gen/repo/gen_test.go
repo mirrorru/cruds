@@ -8,11 +8,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mirrorru/crudquick/dialect"
-	"github.com/mirrorru/crudquick/test/gen/model"
-	"github.com/mirrorru/crudquick/tx_adapter"
+	"github.com/mirrorru/cruds/dialect"
+	"github.com/mirrorru/cruds/test/gen/model"
+	"github.com/mirrorru/cruds/tx_adapter"
 
-	qc "github.com/mirrorru/crudquick"
+	qc "github.com/mirrorru/cruds"
 
 	"github.com/mirrorru/dot"
 	"github.com/stretchr/testify/assert"
