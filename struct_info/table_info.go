@@ -3,6 +3,7 @@ package struct_info
 import (
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/mirrorru/crudquick/helpers"
 )
@@ -61,6 +62,11 @@ func GetTableInfo(t reflect.Type) (*TableInfo, error) {
 			result.RefIdxList = append(result.RefIdxList, idx)
 		}
 	}
+
+	// sort result.SortIdxList
+	slices.SortStableFunc(result.SortIdxList, func(a, b int) int {
+		return fields[a].SortPos - fields[b].SortPos
+	})
 
 	return result, nil
 }

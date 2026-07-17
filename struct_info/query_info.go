@@ -88,7 +88,7 @@ func collectQueryInfoImpl(t reflect.Type) (QueryInfo, error) {
 			continue
 		}
 
-		flags, err := ParseQueryTag(fld.Tag.Get(tagName))
+		flags, err := ParseQueryTag(fld.Tag.Get(TagName))
 		if err != nil {
 			return QueryInfo{}, fmt.Errorf("field %s: %w", fld.Name, err)
 		}
