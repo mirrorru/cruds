@@ -89,15 +89,15 @@ The root package provides package-level variables for convenient dialect access:
 | `tx_adapter` | Adapters for `pgx` and `database/sql` |
 | `defs` | SQL constants |
 | `helpers` | Utility functions |
-| `cmd/qcgen` | Typed implementation generator |
+| `cmd/crudsgen` | Typed implementation generator |
 
-## Code Generator (qcgen)
+## Code Generator (crudsgen)
 
 The generator creates typed table implementations without reflection:
 
 ```bash
-go install ./cmd/qcgen
-qcgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
+go install ./cmd/crudsgen
+crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 ```
 
 ## Build & Test

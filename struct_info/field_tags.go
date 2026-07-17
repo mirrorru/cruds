@@ -69,7 +69,7 @@ func IsKey(key, val string) bool {
 	return len(val) >= l && val[:l] == key
 }
 
-func parseFieldTag(tag string) (result FieldTagFlags, ok bool) {
+func ParseFieldTag(tag string) (result FieldTagFlags, ok bool) {
 	keys := strings.Split(tag, KeysSeparator)
 	for _, key := range keys {
 		switch {
@@ -132,7 +132,7 @@ func collectFieldInfo(fld reflect.StructField, parentFlags FieldTagFlags) (_ []T
 		return nil, nil
 	}
 
-	flags, processable := parseFieldTag(fld.Tag.Get(TagName))
+	flags, processable := ParseFieldTag(fld.Tag.Get(TagName))
 	if !processable {
 		return nil, nil
 	}
@@ -161,9 +161,9 @@ func collectFieldInfo(fld reflect.StructField, parentFlags FieldTagFlags) (_ []T
 		Index:     fld.Index,
 		Path:      []string{fld.Name},
 		IsPK:      flags.IsPK,
-		CanSelect: flags.canSelect(),
-		CanInsert: flags.canInsert(),
-		CanUpdate: flags.canUpdate(),
+		CanSelect: flags.CanSelect(),
+		CanInsert: flags.CanInsert(),
+		CanUpdate: flags.CanUpdate(),
 		SQLName:   flags.ColName,
 	}
 	if tblFld.SQLName == "" {
@@ -190,14 +190,14 @@ func collectFieldInfo(fld reflect.StructField, parentFlags FieldTagFlags) (_ []T
 	return []TableField{tblFld}, nil
 }
 
-func (f *FieldTagFlags) canInsert() bool {
+func (f *FieldTagFlags) CanInsert() bool {
 	return f.ForceInsert || !f.ReadOnly && !f.AutoGen
 }
 
-func (f *FieldTagFlags) canUpdate() bool {
+func (f *FieldTagFlags) CanUpdate() bool {
 	return f.ForceUpdate || !f.ReadOnly && !f.IsPK
 }
 
-func (f *FieldTagFlags) canSelect() bool {
+func (f *FieldTagFlags) CanSelect() bool {
 	return !f.SkipReading
 }

@@ -15,7 +15,7 @@ Domain Driven Design & Clean Architecture.
 
 - **Корневой пакет (cruds)** — универсальная реализация `Table[ROW]` и система фильтрации (`Filter`, `FilterNode`, `ConditionNode`, `GroupNode`) с использованием reflection
 - **dialect_vars.go** — пакетные переменные-алиасы (`SQLite`, `PostgresSQL`) для удобного доступа к диалектам без импорта пакета `dialect`
-- **cmd/qcgen** — генератор кода для создания типизированных реализаций без reflection
+- **cmd/crudsgen** — генератор кода для создания типизированных реализаций без reflection
 
 ### Infrastructure Layer (Инфраструктурный слой)
 
@@ -34,7 +34,7 @@ Domain Driven Design & Clean Architecture.
 5. `tx_adapter` выполняет запросы через `pgx` или `database/sql`
 6. Результаты маппятся обратно в структуры через reflection или сгенерированный код
 
-## Генератор кода (cmd/qcgen)
+## Генератор кода (cmd/crudsgen)
 
 Генератор создаёт типизированные реализации таблиц без reflection:
 

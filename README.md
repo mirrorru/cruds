@@ -89,15 +89,15 @@ func main() {
 | `tx_adapter` | Адаптеры для `pgx` и `database/sql` |
 | `defs` | SQL-константы |
 | `helpers` | Вспомогательные функции |
-| `cmd/qcgen` | Генератор типизированных реализаций |
+| `cmd/crudsgen` | Генератор типизированных реализаций |
 
-## Генератор кода (qcgen)
+## Генератор кода (crudsgen)
 
 Генератор создаёт типизированные реализации таблиц без reflection:
 
 ```bash
-go install ./cmd/qcgen
-qcgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
+go install ./cmd/crudsgen
+crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 ```
 
 ## Сборка и тесты

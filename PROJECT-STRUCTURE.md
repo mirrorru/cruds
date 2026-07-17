@@ -9,7 +9,7 @@
 - `contracts.go` — интерфейсы и контракты (`TypedTable[ROW]`, `TxProcessor`, `Row`, `Result`, `Rows`)
 - `dialect_vars.go` — пакетные переменные-алиасы для SQL-диалектов (`SQLite`, `PostgresSQL`), предоставляющие удобный доступ к реализациям диалектов без импорта пакета `dialect`
 
-### cmd/qcgen
+### cmd/crudsgen
 Генератор кода для создания типизированных реализаций таблиц без reflection.
 - `main.go` — генератор, который парсит AST Go файлов и создаёт hard-coded реализации
 
@@ -23,8 +23,8 @@
 
 **Использование:**
 ```bash
-go install ./cmd/qcgen
-qcgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
+go install ./cmd/crudsgen
+crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 ```
 
 ### dialect
