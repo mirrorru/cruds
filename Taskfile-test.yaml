@@ -94,13 +94,17 @@ tasks:
   db:create:
     desc: Создание тестовой БД
     cmds:
+      - echo "> > > > > DB CREATE > > > > >"
       - psql "{{.TEST_ROOT_DSN}}" -c "DROP DATABASE IF EXISTS \"{{.TEST_PG_DB}}\";"
       - psql "{{.TEST_ROOT_DSN}}" -c "CREATE DATABASE \"{{.TEST_PG_DB}}\";"
+      - echo "< < < < < DB CREATE < < < < <"
 
   db:drop:
     desc: Удаление тестовой БД
     cmds:
+      - echo "> > > > > DROP DB > > > > >"
       - psql "{{.TEST_ROOT_DSN}}" -c "DROP DATABASE IF EXISTS \"{{.TEST_PG_DB}}\";"
+      - echo "< < < < < DROP DB < < < < <"
 
   full-ci:
     desc: Полный CI-прогон

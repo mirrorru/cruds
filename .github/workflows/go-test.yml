@@ -52,4 +52,4 @@ jobs:
           TEST_PG_HOST: localhost:5432
           TEST_PG_USER: postgres
           TEST_PG_PASSWORD: postgres
-          TEST_PG_DB: postgres://postgres:postgres@localhost:5432/cruds-test?sslmode=disable
+          TEST_PG_DB: cruds-test
