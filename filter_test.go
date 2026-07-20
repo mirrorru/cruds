@@ -11,8 +11,8 @@ import (
 )
 
 type filterTestRow struct {
-	ID   int64  `tbl:"pk;auto"`
-	Name string `tbl:"col=user_name"`
+	ID   int64  `crud:"pk;auto"`
+	Name string `crud:"col=user_name"`
 	Age  int
 }
 

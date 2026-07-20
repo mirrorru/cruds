@@ -12,7 +12,7 @@ import (
 	"github.com/mirrorru/cruds/helpers"
 )
 
-var TagName = "tbl"
+var TagName = "crud"
 
 const (
 	KeyPK      = "pk"      // Primary key
@@ -177,7 +177,7 @@ func collectFieldInfo(fld reflect.StructField, parentFlags FieldTagFlags) (_ []T
 		if err != nil {
 			return nil, err
 		}
-		if tblFld.SortPos > 1 {
+		if len(sort) > 1 {
 			tblFld.SortBackward = strings.ToLower(sort[1]) == KeyDesc
 		}
 	}

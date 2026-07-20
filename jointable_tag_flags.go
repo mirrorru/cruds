@@ -25,7 +25,7 @@ const (
 	KeyTblMap   = "map="
 )
 
-func parseJoinTableFlags(tag string) (result JoinTableTagFlags, ok bool) {
+func ParseJoinTableFlags(tag string) (result JoinTableTagFlags, ok bool) {
 	keys := strings.Split(tag, struct_info.KeysSeparator)
 	for _, key := range keys {
 		switch {

@@ -8,7 +8,7 @@ A library to simplify CRUD operations with Go structs using generics.
 
 - **CRUD operations**: insert, update, select by PK, delete, select with filter
 - **Database support**: PostgreSQL, SQLite (both with RETURNING support)
-- **Tag system**: field behavior configuration via `tbl` struct tag
+- **Tag system**: field behavior configuration via `crud` struct tag
 - **Filters**: condition tree with operators (AND, OR, NOT, =, <>, >, >=, <, <=, LIKE, ILIKE, IN, IS NULL, IS NOT NULL)
 - **Pagination**: OFFSET / LIMIT
 - **Adapters**: for `pgx` and `database/sql`
@@ -31,8 +31,8 @@ import (
 )
 
 type UserRow struct {
-    ID   int64  `tbl:"pk,auto"`
-    Name string `tbl:"col=name"`
+    ID   int64  `crud:"pk,auto"`
+    Name string `crud:"col=name"`
 }
 
 func main() {
@@ -62,7 +62,7 @@ The root package provides package-level variables for convenient dialect access:
 - `qc.PostgresSQL` — PostgreSQL dialect
 - `qc.SQLite` — SQLite dialect
 
-## Struct Field Tags (`tbl:"..."`)
+## Struct Field Tags (`crud:"..."`)
 
 | Tag | Description |
 |-----|-------------|

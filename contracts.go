@@ -14,6 +14,13 @@ type TypedTable[ROW any] interface {
 	Many(ctx context.Context, tx TxProcessor, filter *Filter) ([]*ROW, error)
 }
 
+// TypedJoiner defines the interface for typed table joiner implementations.
+// Generated typed table joiner must implement this interface for compile-time verification.
+type TypedJoiner[JT any] interface {
+	One(ctx context.Context, tx TxProcessor, keys ...any) (*JT, error)
+	Many(ctx context.Context, tx TxProcessor, filter *Filter) ([]*JT, error)
+}
+
 // TxProcessor описывает интерфейс выполнения SQL-запросов.
 type TxProcessor interface {
 	ExecContext(ctx context.Context, query string, args ...any) (Result, error)
