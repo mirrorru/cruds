@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mirrorru/cruds"
-	"github.com/mirrorru/cruds/tx_adapter"
+	"github.com/mirrorru/cruds/dbtx"
 	"github.com/mirrorru/dot"
 	_ "modernc.org/sqlite"
 )
@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 }
 
 func sharedTx() cruds.TxProcessor {
-	return tx_adapter.NewDBAdapterVal(sharedDB)
+	return dbtx.NewDBAdapterVal(sharedDB)
 }
 
 func sharedExec(sql string) {

@@ -1,4 +1,4 @@
-package tx_adapter
+package dbtx
 
 import (
 	"context"

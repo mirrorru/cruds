@@ -26,32 +26,60 @@ go get github.com/mirrorru/cruds
 package main
 
 import (
-    "context"
-    qc "github.com/mirrorru/cruds"
+	"context"
+	"database/sql"
+	"fmt"
+
+	qc "github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/dbtx"
+	_ "modernc.org/sqlite"
 )
 
 type UserRow struct {
-    ID   int64  `crud:"pk,auto"`
-    Name string `crud:"col=name"`
+	ID   int64  `crud:"pk;auto"`
+	Name string `crud:"col=name"`
 }
 
+//func (UserRow) SQLName() string {
+//	return "user_table"
+//}
+
 func main() {
-    // Create a table with PostgreSQL dialect
-    userTable := qc.NewTable[UserRow](qc.PostgresSQL)
+	// Create a table with SQLite dialect
+	userTable := qc.NewTable[UserRow](qc.SQLite)
 
-    // Insert
-    user := &UserRow{Name: "Alice"}
-    inserted, _, err := userTable.Ins(context.Background(), tx, user)
+	db, _ := sql.Open("sqlite", ":memory:")
+	defer db.Close()
 
-    // Select by primary key
-    found, err := userTable.One(context.Background(), tx, 1)
+	tx := dbtx.NewDBAdapterVal(db)
+	// tx := dbtx.NewTxAdapterVal(dbTrans)
+	// tx := dbtx.NewPGXAdapterVal(...)
+	// tx := dbtx.NewPGXPoolAdapterVal(...)
 
-    // Update
-    inserted.Name = "Bob"
-    updated, _, err := userTable.Upd(context.Background(), tx, inserted)
+	_, _ = tx.ExecContext(context.Background(),
+		"CREATE TABLE user_row (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)")
 
-    // Delete
-    _, err = userTable.Del(context.Background(), tx, 1)
+	// Insert
+	user := &UserRow{Name: "Alice"}
+	inserted, res, err := userTable.Ins(context.Background(), tx, user)
+	fmt.Printf("Ins: %#v | %#v | %v\n", *inserted, res, err)
+
+	// Select by primary key
+	found, err := userTable.One(context.Background(), tx, inserted.ID)
+	fmt.Printf("One: %#v %v\n", *found, err)
+
+	// Update
+	inserted.Name = "Bob"
+	updated, _, err := userTable.Upd(context.Background(), tx, inserted)
+	fmt.Printf("Upd: %#v %v\n", *updated, err)
+
+	// Select by filter, or all
+	many, err := userTable.Many(context.Background(), tx, (*qc.Filter)(nil))
+	fmt.Printf("Many: %#v %v\n", *many[0], err)
+
+	// Delete
+	_, err = userTable.Del(context.Background(), tx, updated.ID)
+	fmt.Println("Del:", err)
 }
 ```
 
@@ -86,7 +114,7 @@ The root package provides package-level variables for convenient dialect access:
 | `dialect` | SQL dialects (`PostgreSQLDialect`, `SQLiteDialect`) |
 | `filter` | Filter system |
 | `struct_info` | Table and field metadata |
-| `tx_adapter` | Adapters for `pgx` and `database/sql` |
+| `dbtx` | Adapters for `pgx` and `database/sql` |
 | `defs` | SQL constants |
 | `helpers` | Utility functions |
 | `cmd/crudsgen` | Typed implementation generator |

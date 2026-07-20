@@ -61,7 +61,7 @@ SQL диалекты:
 - `table_info_test.go` — тесты
 - `table_sql_texts.go` — построение SQL текстов
 
-### tx_adapter
+### dbtx
 Адаптеры для работы с БД:
 - `pgx_adapter.go` — адаптеры для pgx.Conn и pgx.Tx
 - `sql_adapter.go` — адаптеры для *sql.DB и *sql.Tx
