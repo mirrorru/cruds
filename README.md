@@ -26,33 +26,62 @@ go get github.com/mirrorru/cruds
 package main
 
 import (
-    "context"
-    qc "github.com/mirrorru/cruds"
+	"context"
+	"database/sql"
+	"fmt"
+
+	qc "github.com/mirrorru/cruds"
+	"github.com/mirrorru/cruds/dbtx"
+	_ "modernc.org/sqlite"
 )
 
 type UserRow struct {
-    ID   int64  `crud:"pk,auto"`
-    Name string `crud:"col=name"`
+	ID   int64  `crud:"pk;auto"`
+	Name string `crud:"col=name"`
 }
+
+//func (UserRow) SQLName() string {
+//	return "user_table"
+//}
 
 func main() {
-    // Создание таблицы с диалектом PostgreSQL
-    userTable := qc.NewTable[UserRow](qc.PostgresSQL)
+	// Создание таблицы с диалектом SQLite
+	userTable := qc.NewTable[UserRow](qc.SQLite)
 
-    // Вставка
-    user := &UserRow{Name: "Alice"}
-    inserted, _, err := userTable.Ins(context.Background(), tx, user)
+	db, _ := sql.Open("sqlite", ":memory:")
+	defer db.Close()
 
-    // Выборка по первичному ключу
-    found, err := userTable.One(context.Background(), tx, 1)
+	tx := dbtx.NewDBAdapterVal(db)
+	// tx := dbtx.NewTxAdapterVal(dbTrans)
+	// tx := dbtx.NewPGXAdapterVal(...)
+	// tx := dbtx.NewPGXPoolAdapterVal(...)
 
-    // Обновление
-    inserted.Name = "Bob"
-    updated, _, err := userTable.Upd(context.Background(), tx, inserted)
+	_, _ = tx.ExecContext(context.Background(),
+		"CREATE TABLE user_row (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)")
 
-    // Удаление
-    _, err = userTable.Del(context.Background(), tx, 1)
+	// Вставка
+	user := &UserRow{Name: "Alice"}
+	inserted, res, err := userTable.Ins(context.Background(), tx, user)
+	fmt.Printf("Ins: %#v | %#v | %v\n", *inserted, res, err)
+
+	// Выборка по первичному ключу
+	found, err := userTable.One(context.Background(), tx, inserted.ID)
+	fmt.Printf("One: %#v %v\n", *found, err)
+
+	// Обновление
+	inserted.Name = "Bob"
+	updated, _, err := userTable.Upd(context.Background(), tx, inserted)
+	fmt.Printf("Upd: %#v %v\n", *updated, err)
+
+	// Выборка по фильтру, если требуется
+	many, err := userTable.Many(context.Background(), tx, (*qc.Filter)(nil))
+	fmt.Printf("Many: %#v %v\n", *many[0], err)
+
+	// Удаление
+	_, err = userTable.Del(context.Background(), tx, updated.ID)
+	fmt.Println("Del:", err)
 }
+
 ```
 
 ### Алиасы диалектов
@@ -86,7 +115,7 @@ func main() {
 | `dialect` | SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`) |
 | `filter` | Система фильтрации |
 | `struct_info` | Метаданные таблиц и полей |
-| `tx_adapter` | Адаптеры для `pgx` и `database/sql` |
+| `dbtx` | Адаптеры для `pgx` и `database/sql` |
 | `defs` | SQL-константы |
 | `helpers` | Вспомогательные функции |
 | `cmd/crudsgen` | Генератор типизированных реализаций |

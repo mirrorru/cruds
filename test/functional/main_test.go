@@ -10,7 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mirrorru/cruds"
-	"github.com/mirrorru/cruds/tx_adapter"
+	"github.com/mirrorru/cruds/dbtx"
 )
 
 var sharedPool *pgxpool.Pool
@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func sharedTx() cruds.TxProcessor {
-	return tx_adapter.NewPGXPoolAdapterVal(sharedPool)
+	return dbtx.NewPGXPoolAdapterVal(sharedPool)
 }
 
 func sharedExec(sql string) {

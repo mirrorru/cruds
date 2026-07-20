@@ -26,7 +26,7 @@ CRUDs предоставляет типобезопасный слой для р
 
 - `dialect` — SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`)
 - `struct_info` — метаданные таблиц и полей (парсинг тегов, извлечение информации)
-- `tx_adapter` — адаптеры для `pgx.Conn`, `pgx.Tx`, `*sql.DB`, `*sql.Tx`
+- `dbtx` — адаптеры для `pgx.Conn`, `pgx.Tx`, `*sql.DB`, `*sql.Tx`
 - `defs` — SQL-константы
 - `helpers` — вспомогательные функции (casing)
 

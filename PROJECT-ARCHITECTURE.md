@@ -22,7 +22,7 @@ Domain Driven Design & Clean Architecture.
 
 - **dialect** — SQL-диалекты (`PostgreSQLDialect`, `SQLiteDialect`)
 - **struct_info** — метаданные таблиц и полей (парсинг тегов, извлечение информации)
-- **tx_adapter** — адаптеры для работы с БД (`pgx.Conn`, `pgx.Tx`, `*sql.DB`, `*sql.Tx`)
+- **dbtx** — адаптеры для работы с БД (`pgx.Conn`, `pgx.Tx`, `*sql.DB`, `*sql.Tx`)
 - **defs** — SQL-константы
 - **helpers** — вспомогательные функции (casing)
 
@@ -32,7 +32,7 @@ Domain Driven Design & Clean Architecture.
 2. `Table[ROW]` / `Joiner[JT]` использует `struct_info` для получения метаданных структуры
 3. `dialect` формирует SQL-запросы с учётом особенностей БД
 4. Система фильтрации (в корневом пакете) строит дерево условий для WHERE-_clause_
-5. `tx_adapter` выполняет запросы через `pgx` или `database/sql`
+5. `dbtx` выполняет запросы через `pgx` или `database/sql`
 6. Результаты маппятся обратно в структуры через reflection или сгенерированный код
 
 ## Генератор кода (cmd/crudsgen)
