@@ -700,13 +700,13 @@ func parseJoinStructFields(structType *ast.StructType, registry map[string]*pkgT
 			tagStr = extractTblTag(tagStr)
 		}
 
-		if tagStr == "" {
-			continue
-		}
-
-		joinFlags, processable := cruds.ParseJoinTableFlags(tagStr)
-		if !processable {
-			continue
+		var joinFlags cruds.JoinTableTagFlags
+		if tagStr != "" {
+			var processable bool
+			joinFlags, processable = cruds.ParseJoinTableFlags(tagStr)
+			if !processable {
+				continue
+			}
 		}
 
 		isPtr := false
@@ -743,6 +743,11 @@ func parseJoinStructFields(structType *ast.StructType, registry map[string]*pkgT
 			}
 		}
 
+		joinMode := joinFlags.Join
+		if isPtr && joinMode == "" {
+			joinMode = "left"
+		}
+
 		fieldName := field.Names[0].Name
 		result = append(result, joinFieldInfo{
 			Name:         fieldName,
@@ -755,7 +760,7 @@ func parseJoinStructFields(structType *ast.StructType, registry map[string]*pkgT
 			IsFrom:       joinFlags.IsFrom,
 			IsPK:         joinFlags.IsPK,
 			SortPriority: sortPriority,
-			JoinMode:     joinFlags.Join,
+			JoinMode:     joinMode,
 			Alias:        joinFlags.Alias,
 			RefAliasMap:  refAliasMap,
 			Fields:       subFields,

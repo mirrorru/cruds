@@ -498,7 +498,7 @@ func collectJoinTables(t reflect.Type) (result JoinTables, err error) {
 
 		var joinMode JoinMode
 		if isPtr {
-			joinMode = InnerJoin
+			joinMode = LeftJoin
 		}
 		if joinTableFlags.Join != "" {
 			if joinMode, err = JoinModeParse(joinTableFlags.Join); err != nil {
