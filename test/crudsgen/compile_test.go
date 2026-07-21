@@ -32,3 +32,7 @@ func TestJoinSampleInterface(t *testing.T) {
 func TestJoinSummaryInterface(t *testing.T) {
 	var _ cruds.TypedJoiner[testmodels.JoinSummary] = (*testmodels.JoinerJoinSummary)(nil)
 }
+
+func TestJoinDefaultPointerInterface(t *testing.T) {
+	var _ cruds.TypedJoiner[testmodels.JoinDefaultPointer] = (*testmodels.JoinerJoinDefaultPointer)(nil)
+}

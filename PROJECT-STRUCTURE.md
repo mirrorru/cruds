@@ -23,6 +23,7 @@
 - Генерация helper методов: `scanRefs`, `insertArgs`, `updateArgs`
 - Генерация CRUD методов с прямым доступом к полям
 - **Генерация Joiner* структур** — типизированные реализации join-запросов (INNER/LEFT/RIGHT/OUTER/CROSS JOIN) с pre-computed SQL и hardcoded `makeRefs`/`applyRefs`
+- **Кросс-пакетная генерация Joiner*** — поддержка join-структур, поля которых ссылаются на типы из других пакетов. Генератор автоматически обходит импорты указанных в `-src` директорий и рекурсивно обнаруживает все нужные пакеты с типами, добавляя необходимые import-ы в генерируемый код
 - **Поддержка build-тегов** через флаг `-build=` (можно указывать несколько раз, объединяются через `||`)
 
 **Использование:**
@@ -30,7 +31,7 @@
 go install ./cmd/crudsgen
 # Генерация Table* (по умолчанию)
 crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
-# Генерация Joiner*
+# Генерация Joiner* (типы из других пакетов обнаруживаются автоматически по импортам)
 crudsgen -src=path/to/models:Join* -dest=path/to/repo -pkg=repo -joiner
 # Генерация с build-тегами
 crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo -build=crudsgen

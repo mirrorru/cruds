@@ -61,11 +61,21 @@ type genConfig struct {
 	genJoiner bool
 }
 
+type pkgTypeEntry struct {
+	pkgName    string
+	pkgPath    string
+	typeName   string
+	structType *ast.StructType
+	file       *ast.File
+}
+
 type joinFieldInfo struct {
 	Name          string
 	AccessExpr    string
 	TypeName      string
 	PkgName       string
+	SubPkgName    string
+	SubPkgPath    string
 	IsPointer     bool
 	IsFrom        bool
 	IsPK          bool
@@ -81,10 +91,11 @@ type joinFieldInfo struct {
 }
 
 type joinTypeInfo struct {
-	Name    string
-	PkgPath string
-	PkgName string
-	Fields  []joinFieldInfo
+	Name       string
+	PkgPath    string
+	PkgName    string
+	Fields     []joinFieldInfo
+	PkgImports map[string]string
 }
 
 func main() {
@@ -242,6 +253,16 @@ func run(cfg genConfig) error {
 	allTypes := make([]typeInfo, 0)
 	allJoinTypes := make([]joinTypeInfo, 0)
 
+	var globalRegistry map[string]*pkgTypeEntry
+	var globalPkgImports map[string]string
+	if cfg.genJoiner {
+		var err error
+		globalRegistry, globalPkgImports, err = buildGlobalRegistry(cfg.srcs)
+		if err != nil {
+			return fmt.Errorf("failed to build global type registry: %w", err)
+		}
+	}
+
 	for _, src := range cfg.srcs {
 		if cfg.genTable {
 			types, err := findTypes(src.path, src.pattern)
@@ -252,9 +273,12 @@ func run(cfg genConfig) error {
 		}
 
 		if cfg.genJoiner {
-			jtypes, err := findJoinTypes(src.path, src.pattern)
+			jtypes, err := findJoinTypes(src.path, src.pattern, globalRegistry)
 			if err != nil {
 				return fmt.Errorf("failed to find join types in %s: %w", src.path, err)
+			}
+			for i := range jtypes {
+				jtypes[i].PkgImports = globalPkgImports
 			}
 			allJoinTypes = append(allJoinTypes, jtypes...)
 		}
@@ -280,6 +304,146 @@ func run(cfg genConfig) error {
 	}
 
 	return nil
+}
+
+func buildGlobalRegistry(specs []srcSpec) (map[string]*pkgTypeEntry, map[string]string, error) {
+	registry := make(map[string]*pkgTypeEntry)
+	pkgImports := make(map[string]string)
+
+	processed := make(map[string]bool)
+
+	for _, spec := range specs {
+		absDir, err := filepath.Abs(spec.path)
+		if err != nil {
+			return nil, nil, err
+		}
+		processed[absDir] = true
+	}
+
+	modRoot := filepath.Dir(mustFindGoMod("."))
+	modName := findModuleName(modRoot)
+	if modName == "" {
+		return nil, nil, errors.New("failed to find module name")
+	}
+
+	type dirToProcess struct {
+		dir  string
+		from string
+	}
+
+	dirs := make([]dirToProcess, 0)
+	for _, spec := range specs {
+		absDir, _ := filepath.Abs(spec.path)
+		dirs = append(dirs, dirToProcess{dir: absDir, from: "src"})
+	}
+
+	for len(dirs) > 0 {
+		dp := dirs[0]
+		dirs = dirs[1:]
+
+		modulePath, err := findModulePath(dp.dir)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to find module path for %s: %w", dp.dir, err)
+		}
+
+		fset := token.NewFileSet()
+		pkgs, err := parser.ParseDir(fset, dp.dir, func(fi os.FileInfo) bool {
+			return !strings.HasSuffix(fi.Name(), "_test.go")
+		}, parser.ParseComments)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		for pkgName, pkg := range pkgs {
+			pkgPath := modulePath
+			modDir := filepath.Dir(mustFindGoMod(dp.dir))
+			if dp.dir != modDir {
+				relPath, relErr := filepath.Rel(modDir, dp.dir)
+				if relErr != nil {
+					return nil, nil, relErr
+				}
+				if relPath != "." {
+					pkgPath = modulePath + "/" + filepath.ToSlash(relPath)
+				}
+			}
+
+			for _, file := range pkg.Files {
+				for _, imp := range file.Imports {
+					importPath := strings.Trim(imp.Path.Value, `"`)
+					var importPkgName string
+					if imp.Name != nil {
+						importPkgName = imp.Name.Name
+					} else {
+						idx := strings.LastIndex(importPath, "/")
+						if idx >= 0 {
+							importPkgName = importPath[idx+1:]
+						} else {
+							importPkgName = importPath
+						}
+					}
+					if importPkgName == "_" || importPkgName == "." || importPkgName == "" {
+						continue
+					}
+					if _, exists := pkgImports[importPkgName]; !exists {
+						pkgImports[importPkgName] = importPath
+					}
+
+					if strings.HasPrefix(importPath, modName+"/") || importPath == modName {
+						relPath := strings.TrimPrefix(importPath, modName)
+						relPath = strings.TrimPrefix(relPath, "/")
+						depDir := filepath.Join(modRoot, filepath.FromSlash(relPath))
+						if !processed[depDir] {
+							processed[depDir] = true
+							dirs = append(dirs, dirToProcess{dir: depDir, from: "import"})
+						}
+					}
+				}
+
+				for _, decl := range file.Decls {
+					genDecl, isGenDecl := decl.(*ast.GenDecl)
+					if !isGenDecl || genDecl.Tok != token.TYPE {
+						continue
+					}
+					for _, spec := range genDecl.Specs {
+						typeSpec, ok := spec.(*ast.TypeSpec)
+						if !ok {
+							continue
+						}
+						structType, isStruct := typeSpec.Type.(*ast.StructType)
+						if !isStruct {
+							continue
+						}
+						key := registryKey(pkgName, typeSpec.Name.Name)
+						if _, exists := registry[key]; !exists {
+							registry[key] = &pkgTypeEntry{
+								pkgName:    pkgName,
+								pkgPath:    pkgPath,
+								typeName:   typeSpec.Name.Name,
+								structType: structType,
+								file:       file,
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return registry, pkgImports, nil
+}
+
+func findModuleName(modRoot string) string {
+	content, err := os.ReadFile(filepath.Join(modRoot, "go.mod"))
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module"))
+		}
+	}
+	return ""
 }
 
 func findTypes(dir, pattern string) ([]typeInfo, error) {
@@ -381,7 +545,19 @@ func findTypes(dir, pattern string) ([]typeInfo, error) {
 		if !ok {
 			continue
 		}
-		fields := parseStructFields(structType, allStructs, m.pkgName)
+
+		localReg := make(map[string]*pkgTypeEntry, len(allStructs))
+		for name, st := range allStructs {
+			localReg[registryKey(m.pkgName, name)] = &pkgTypeEntry{
+				pkgName:    m.pkgName,
+				pkgPath:    m.pkgPath,
+				typeName:   name,
+				structType: st,
+				file:       m.file,
+			}
+		}
+
+		fields := parseStructFields(structType, localReg, m.pkgName)
 		sqlName, hasSQLName := extractSQLName(m.file, m.typeName)
 		if !hasSQLName {
 			sqlName = helpers.ToSnakeCase(m.typeName)
@@ -400,7 +576,7 @@ func findTypes(dir, pattern string) ([]typeInfo, error) {
 	return result, nil
 }
 
-func findJoinTypes(dir, pattern string) ([]joinTypeInfo, error) {
+func findJoinTypes(dir, pattern string, registry map[string]*pkgTypeEntry) ([]joinTypeInfo, error) {
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
@@ -426,7 +602,6 @@ func findJoinTypes(dir, pattern string) ([]joinTypeInfo, error) {
 	}
 
 	var matches []matchInfo
-	allStructs := make(map[string]*ast.StructType)
 
 	for pkgName, pkg := range pkgs {
 		pkgPath := modulePath
@@ -441,22 +616,6 @@ func findJoinTypes(dir, pattern string) ([]joinTypeInfo, error) {
 		}
 
 		for _, file := range pkg.Files {
-			for _, decl := range file.Decls {
-				genDecl, isGenDecl := decl.(*ast.GenDecl)
-				if !isGenDecl || genDecl.Tok != token.TYPE {
-					continue
-				}
-				for _, spec := range genDecl.Specs {
-					typeSpec, ok := spec.(*ast.TypeSpec)
-					if !ok {
-						continue
-					}
-					if structType, isStruct := typeSpec.Type.(*ast.StructType); isStruct {
-						allStructs[typeSpec.Name.Name] = structType
-					}
-				}
-			}
-
 			for _, decl := range file.Decls {
 				genDecl, isGenDecl := decl.(*ast.GenDecl)
 				if !isGenDecl || genDecl.Tok != token.TYPE {
@@ -496,7 +655,7 @@ func findJoinTypes(dir, pattern string) ([]joinTypeInfo, error) {
 			continue
 		}
 
-		jFields, isJoin := parseJoinStructFields(structType, allStructs, m.file)
+		jFields, isJoin := parseJoinStructFields(structType, registry, m.pkgName)
 		if !isJoin || len(jFields) == 0 {
 			continue
 		}
@@ -512,14 +671,14 @@ func findJoinTypes(dir, pattern string) ([]joinTypeInfo, error) {
 	return result, nil
 }
 
-func parseJoinStructFields(structType *ast.StructType, allStructs map[string]*ast.StructType, file *ast.File) ([]joinFieldInfo, bool) {
+func parseJoinStructFields(structType *ast.StructType, registry map[string]*pkgTypeEntry, localPkgName string) ([]joinFieldInfo, bool) {
 	var result []joinFieldInfo
 	hasJoinFields := false
 
 	for _, field := range structType.Fields.List {
 		if len(field.Names) == 0 {
-			if structType, ok := allStructs[getTypeName(field.Type)]; ok {
-				subFields, subIsJoin := parseJoinStructFields(structType, allStructs, file)
+			if entry, ok := registry[registryKey(localPkgName, getTypeName(field.Type))]; ok {
+				subFields, subIsJoin := parseJoinStructFields(entry.structType, registry, entry.pkgName)
 				if subIsJoin {
 					result = append(result, subFields...)
 					hasJoinFields = true
@@ -541,29 +700,30 @@ func parseJoinStructFields(structType *ast.StructType, allStructs map[string]*as
 			tagStr = extractTblTag(tagStr)
 		}
 
-		if tagStr == "" {
-			continue
+		var joinFlags cruds.JoinTableTagFlags
+		if tagStr != "" {
+			var processable bool
+			joinFlags, processable = cruds.ParseJoinTableFlags(tagStr)
+			if !processable {
+				continue
+			}
 		}
 
-		joinFlags, processable := cruds.ParseJoinTableFlags(tagStr)
-		if !processable {
-			continue
-		}
-
-		isPtr, typeName := false, getTypeName(field.Type)
+		isPtr := false
 		if _, isStar := field.Type.(*ast.StarExpr); isStar {
 			isPtr = true
 		}
 
-		subStruct, ok := allStructs[typeName]
+		typeName, subPkgName := getQualifiedTypeName(field.Type, localPkgName)
+		entry, ok := registry[registryKey(subPkgName, typeName)]
 		if !ok {
 			continue
 		}
 
 		hasJoinFields = true
 
-		subFields := parseStructFields(subStruct, allStructs, file.Name.Name)
-		sqlName, hasSQLName := extractSQLName(file, typeName)
+		subFields := parseStructFields(entry.structType, registry, entry.pkgName)
+		sqlName, hasSQLName := findSQLName(entry, registry)
 		if !hasSQLName {
 			sqlName = helpers.ToSnakeCase(typeName)
 		}
@@ -583,17 +743,24 @@ func parseJoinStructFields(structType *ast.StructType, allStructs map[string]*as
 			}
 		}
 
+		joinMode := joinFlags.Join
+		if isPtr && joinMode == "" {
+			joinMode = "left"
+		}
+
 		fieldName := field.Names[0].Name
 		result = append(result, joinFieldInfo{
 			Name:         fieldName,
 			AccessExpr:   fieldName,
 			TypeName:     typeName,
-			PkgName:      "", // filled later
+			PkgName:      subPkgName,
+			SubPkgName:   subPkgName,
+			SubPkgPath:   entry.pkgPath,
 			IsPointer:    isPtr,
 			IsFrom:       joinFlags.IsFrom,
 			IsPK:         joinFlags.IsPK,
 			SortPriority: sortPriority,
-			JoinMode:     joinFlags.Join,
+			JoinMode:     joinMode,
 			Alias:        joinFlags.Alias,
 			RefAliasMap:  refAliasMap,
 			Fields:       subFields,
@@ -609,16 +776,46 @@ func parseJoinStructFields(structType *ast.StructType, allStructs map[string]*as
 	return result, true
 }
 
-func parseStructFields(structType *ast.StructType, allStructs map[string]*ast.StructType, pkgName string) []genField {
+func findSQLName(entry *pkgTypeEntry, registry map[string]*pkgTypeEntry) (string, bool) {
+	if name, ok := extractSQLName(entry.file, entry.typeName); ok {
+		return name, true
+	}
+
+	if name, ok := extractSQLNameEmbd(entry.file, entry.structType, registry, entry.pkgName); ok {
+		return name, true
+	}
+
+	return "", false
+}
+
+func extractSQLNameEmbd(file *ast.File, structType *ast.StructType, registry map[string]*pkgTypeEntry, localPkgName string) (string, bool) {
+	for _, field := range structType.Fields.List {
+		if len(field.Names) == 0 {
+			typeName, pkgName := getQualifiedTypeName(field.Type, localPkgName)
+			if entry, ok := registry[registryKey(pkgName, typeName)]; ok {
+				if name, ok2 := extractSQLName(file, typeName); ok2 {
+					return name, true
+				}
+				if name, ok2 := extractSQLNameEmbd(entry.file, entry.structType, registry, entry.pkgName); ok2 {
+					return name, true
+				}
+			}
+			continue
+		}
+	}
+	return "", false
+}
+
+func parseStructFields(structType *ast.StructType, registry map[string]*pkgTypeEntry, pkgName string) []genField {
 	var result []genField
 	for _, field := range structType.Fields.List {
-		fields := collectFieldInfo(field, allStructs, struct_info.FieldTagFlags{}, nil, pkgName)
+		fields := collectFieldInfo(field, registry, struct_info.FieldTagFlags{}, nil, pkgName)
 		result = append(result, fields...)
 	}
 	return result
 }
 
-func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, parentFlags struct_info.FieldTagFlags, parentPath []string, pkgName string) []genField {
+func collectFieldInfo(field *ast.Field, registry map[string]*pkgTypeEntry, parentFlags struct_info.FieldTagFlags, parentPath []string, pkgName string) []genField {
 	if len(field.Names) > 0 && !field.Names[0].IsExported() {
 		return nil
 	}
@@ -643,16 +840,19 @@ func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, p
 
 	if len(field.Names) == 0 {
 		isEmbedded = true
-		embeddedTypeName = getTypeName(field.Type)
+		embeddedTypeName, _ = getQualifiedTypeName(field.Type, pkgName)
 	} else if flags.Embed || flags.Prefix != "" {
-		embeddedTypeName = getTypeName(field.Type)
+		embeddedTypeName, _ = getQualifiedTypeName(field.Type, pkgName)
 		if embeddedTypeName != "" {
 			isEmbedded = true
 		}
 	}
 
 	if isEmbedded && embeddedTypeName != "" {
-		if embeddedStruct, ok := allStructs[embeddedTypeName]; ok {
+		eTypeName, ePkgName := getQualifiedTypeName(field.Type, pkgName)
+		if entry, ok := registry[registryKey(ePkgName, eTypeName)]; ok {
+			embeddedStruct := entry.structType
+			embeddedPkgName := entry.pkgName
 			var result []genField
 			fieldName := embeddedTypeName
 			if len(field.Names) > 0 {
@@ -663,7 +863,7 @@ func collectFieldInfo(field *ast.Field, allStructs map[string]*ast.StructType, p
 			newPath[len(parentPath)] = fieldName
 
 			for _, subField := range embeddedStruct.Fields.List {
-				subFields := collectFieldInfo(subField, allStructs, flags, newPath, pkgName)
+				subFields := collectFieldInfo(subField, registry, flags, newPath, embeddedPkgName)
 				result = append(result, subFields...)
 			}
 			return result
@@ -733,6 +933,29 @@ func getTypeName(expr ast.Expr) string {
 		return t.Sel.Name
 	}
 	return ""
+}
+
+func identName(expr ast.Expr) string {
+	if ident, ok := expr.(*ast.Ident); ok {
+		return ident.Name
+	}
+	return ""
+}
+
+func getQualifiedTypeName(expr ast.Expr, localPkgName string) (typeName string, pkgName string) {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		return t.Name, localPkgName
+	case *ast.StarExpr:
+		return getQualifiedTypeName(t.X, localPkgName)
+	case *ast.SelectorExpr:
+		return t.Sel.Name, identName(t.X)
+	}
+	return "", ""
+}
+
+func registryKey(pkgName, typeName string) string {
+	return pkgName + "." + typeName
 }
 
 var builtinTypes = map[string]bool{
@@ -1182,6 +1405,11 @@ type allFieldTmpl struct {
 	FieldName string
 }
 
+type extraImportTmpl struct {
+	PkgName string
+	PkgPath string
+}
+
 type pointerVarTmpl struct {
 	VarName string
 	Fields  []genField
@@ -1221,6 +1449,18 @@ func generateJoinerFile(cfg genConfig, jt joinTypeInfo) error {
 
 	var subTables []subTableTmpl
 	needSrcPkg := jt.PkgPath != moduleOfDest(cfg)
+	destMod := moduleOfDest(cfg)
+
+	extraImports := map[string]string{}
+	for _, jf := range jt.Fields {
+		if jf.SubPkgPath != "" && jf.SubPkgPath != destMod {
+			extraImports[jf.SubPkgPath] = jf.SubPkgName
+		}
+		for _, f := range jf.Fields {
+			extractPkgRefs(f.GoType, jt.PkgImports, extraImports)
+		}
+	}
+
 	for _, jf := range jt.Fields {
 		st := subTableTmpl{joinFieldInfo: jf}
 		for fi, f := range jf.Fields {
@@ -1241,11 +1481,13 @@ func generateJoinerFile(cfg genConfig, jt joinTypeInfo) error {
 				st.RefIndices = append(st.RefIndices, fi)
 			}
 		}
-		if needSrcPkg {
-			st.QualSubTypeName = jt.PkgName + "." + st.TypeName
+
+		subNeedPkg := jf.SubPkgPath != destMod
+		if subNeedPkg {
+			st.QualSubTypeName = jf.SubPkgName + "." + st.TypeName
 		} else {
 			st.QualSubTypeName = st.TypeName
-			pkgPrefix := jt.PkgName + "."
+			pkgPrefix := jf.SubPkgName + "."
 			for i := range st.Fields {
 				st.Fields[i].GoType = strings.TrimPrefix(st.Fields[i].GoType, pkgPrefix)
 			}
@@ -1310,6 +1552,7 @@ func generateJoinerFile(cfg genConfig, jt joinTypeInfo) error {
 		PointerVars  []pointerVarTmpl
 		NeedSrcPkg   bool
 		QualTypeName string
+		ExtraImports []extraImportTmpl
 	}{
 		BuildTag:     buildTagLine(cfg.builds),
 		GoGenerate:   goGenStr,
@@ -1320,6 +1563,11 @@ func generateJoinerFile(cfg genConfig, jt joinTypeInfo) error {
 		PointerVars:  pointerVars,
 		NeedSrcPkg:   needSrcPkg,
 		QualTypeName: qualType,
+		ExtraImports: make([]extraImportTmpl, 0),
+	}
+
+	for pkgPath, pkgName := range extraImports {
+		data.ExtraImports = append(data.ExtraImports, extraImportTmpl{PkgName: pkgName, PkgPath: pkgPath})
 	}
 
 	tmpl, err := template.New("joiner").Funcs(template.FuncMap{
@@ -1353,6 +1601,22 @@ func generateJoinerFile(cfg genConfig, jt joinTypeInfo) error {
 	}
 
 	return tmpl.Execute(f, data)
+}
+
+func extractPkgRefs(goType string, pkgImports map[string]string, extraImports map[string]string) {
+	parts := strings.Split(strings.TrimPrefix(goType, "*"), ".")
+	if len(parts) < 2 {
+		return
+	}
+	pkgName := parts[0]
+	if pkgImports == nil {
+		return
+	}
+	if pkgPath, ok := pkgImports[pkgName]; ok {
+		if _, already := extraImports[pkgPath]; !already {
+			extraImports[pkgPath] = pkgName
+		}
+	}
 }
 
 func moduleOfDest(cfg genConfig) string {
@@ -1420,6 +1684,8 @@ import (
 	"github.com/mirrorru/cruds/struct_info"
 {{if .NeedSrcPkg}}
 	"{{.TypeInfo.PkgPath}}"
+{{end}}{{range .ExtraImports}}
+	{{.PkgName}} "{{.PkgPath}}"
 {{end}}
 )
 

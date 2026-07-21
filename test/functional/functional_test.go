@@ -114,3 +114,21 @@ func TestJoinSummary_Typed_OneMany(t *testing.T) {
 	sharedExec("INSERT INTO table_left (id, ref_id, left_name, birthday, gender) VALUES (100, 1, 'left_1', '2003-02-01', 'male')")
 	test_run.JoinSummary_Typed_OneMany(t, sharedTx(), dialect.PostgreSQLDialect{})
 }
+
+func TestJoinDefaultPointer_Reflection_LeftJoinDefault(t *testing.T) {
+	sharedExec("CREATE TABLE IF NOT EXISTS join_ptr_from (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL)")
+	sharedExec("CREATE TABLE IF NOT EXISTS join_ptr_left (id BIGSERIAL PRIMARY KEY, ref_id BIGINT NOT NULL, value TEXT NOT NULL)")
+	sharedExec("DELETE FROM join_ptr_left")
+	sharedExec("DELETE FROM join_ptr_from")
+	sharedExec("INSERT INTO join_ptr_from (id, name) VALUES (1, 'from_1'), (2, 'from_2')")
+	sharedExec("INSERT INTO join_ptr_left (id, ref_id, value) VALUES (100, 1, 'ptr_left_1')")
+	test_run.JoinDefaultPointer_Reflection_LeftJoinDefault(t, sharedTx(), dialect.PostgreSQLDialect{})
+}
+
+func TestJoinDefaultPointer_Typed_LeftJoinDefault(t *testing.T) {
+	sharedExec("DELETE FROM join_ptr_left")
+	sharedExec("DELETE FROM join_ptr_from")
+	sharedExec("INSERT INTO join_ptr_from (id, name) VALUES (1, 'from_1'), (2, 'from_2')")
+	sharedExec("INSERT INTO join_ptr_left (id, ref_id, value) VALUES (100, 1, 'ptr_left_1')")
+	test_run.JoinDefaultPointer_Typed_LeftJoinDefault(t, sharedTx(), dialect.PostgreSQLDialect{})
+}
