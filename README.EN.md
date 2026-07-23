@@ -124,7 +124,7 @@ The root package provides package-level variables for convenient dialect access:
 The generator creates typed table implementations without reflection:
 
 ```bash
-go install ./cmd/crudsgen
+go install github.com/mirrorru/cruds/cmd/crudsgen
 crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 ```
 
