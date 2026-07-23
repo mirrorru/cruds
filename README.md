@@ -125,7 +125,7 @@ func main() {
 Генератор создаёт типизированные реализации таблиц без reflection:
 
 ```bash
-go install ./cmd/crudsgen
+go install github.com/mirrorru/cruds/cmd/crudsgen
 crudsgen -src=path/to/models:*Row -dest=path/to/repo -pkg=repo
 ```
 
